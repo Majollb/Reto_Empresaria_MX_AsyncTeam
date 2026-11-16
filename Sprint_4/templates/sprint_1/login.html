@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Iniciar Sesión - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=2">
+</head>
+<body>
+
+  <!-- Encabezado superior idéntico a Mockups -->
+  <header class="main-header">
+    <div class="header-container">
+      <div class="brand-wrapper">
+        <div class="brand-icon">
+          <!-- 4 cuadrados redondeados en cuadrícula 2x2 -->
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor central con trazos de circuito decorativo de fondo -->
+  <main class="login-page-wrapper">
+    <div class="circuit-bg-decor">
+      <svg class="circuit-svg" viewBox="0 0 1440 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Trazos esquemáticos sutiles laterales -->
+        <path d="M 0 250 L 120 250 L 220 350 L 350 350" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="350" cy="350" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+        
+        <path d="M 0 310 L 160 310 L 250 400 L 400 400" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="400" cy="400" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+
+        <path d="M 1440 250 L 1320 250 L 1220 350 L 1090 350" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="1090" cy="350" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+
+        <path d="M 1440 310 L 1280 310 L 1190 400 L 1040 400" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="1040" cy="400" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+      </svg>
+    </div>
+
+    <!-- Tarjeta Central de Login -->
+    <div class="login-card">
+      <div class="login-shield-badge">
+        <!-- Icono de escudo con verificación -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+      </div>
+
+      <h1 class="login-heading">INICIAR SESIÓN</h1>
+
+      <!-- Alerta de Error (Mockup 2): Credenciales inválidas o cuenta inactiva -->
+      {% if error %}
+      <div class="alert-box alert-box-error">
+        <span class="alert-icon">
+          <!-- Icono de exclamación en círculo (!) -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </span>
+        <div>{{ error }}</div>
+      </div>
+      {% endif %}
+
+      <!-- Opción contextual para crear el usuario en caso de que no exista -->
+      {% if user_not_found %}
+      <div class="register-prompt-box">
+        <div class="register-prompt-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
+          <span>¿El usuario no existe? Créalo ahora mismo</span>
+        </div>
+        <p class="register-prompt-desc">
+          El identificador <strong>{{ identifier_val }}</strong> no está registrado. Puedes darte de alta y acceder inmediatamente con el rol por defecto <strong>Usuario</strong>:
+        </p>
+        <form action="/register" method="POST">
+          <input type="hidden" name="identificador" value="{{ identifier_val }}">
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <div class="label-with-help">
+              <label class="form-label" for="quick_nombre" style="font-size: 12px;">Nombre Completo *</label>
+              <button type="button" class="btn-help-tooltip" data-tooltip="Ingresa tu nombre y apellido para identificarte en las solicitudes de mantenimiento." aria-label="Ayuda para nombre">?</button>
+            </div>
+            <input 
+              type="text" 
+              id="quick_nombre" 
+              name="nombre_completo" 
+              class="form-input" 
+              style="height: 38px; padding-left: 14px; font-size: 13px;" 
+              placeholder="Ej: Juan Pérez Morales" 
+              value="{{ default_nombre }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <div class="label-with-help">
+              <label class="form-label" for="quick_password" style="font-size: 12px;">Contraseña para la Cuenta *</label>
+              <button type="button" class="btn-help-tooltip" data-tooltip="La contraseña debe tener mínimo 8 caracteres y combinar números (0-9), letras mayúsculas (A-Z) y minúsculas (a-z)." aria-label="Ayuda para contraseña">?</button>
+            </div>
+            <input 
+              type="password" 
+              id="quick_password" 
+              name="password" 
+              class="form-input" 
+              style="height: 38px; padding-left: 14px; font-size: 13px;" 
+              placeholder="Mínimo 8 caracteres, números, mayúsculas y minúsculas" 
+              value="{{ password_val }}"
+              minlength="8"
+              required
+            >
+
+            <!-- Barra de fortaleza de contraseña: Débil, Buena, Excelente -->
+            <div class="pwd-strength-container" style="margin-top: 6px; padding: 8px 10px;">
+              <div class="pwd-strength-header" style="margin-bottom: 4px;">
+                <span class="pwd-strength-title" style="font-size: 11px;">Seguridad:</span>
+                <span class="pwd-strength-label" id="quick-pwd-text" style="font-size: 11px;">Sin ingresar</span>
+              </div>
+              <div class="pwd-strength-bar-bg" style="height: 5px;">
+                <div class="pwd-strength-bar-fill" id="quick-pwd-fill"></div>
+              </div>
+              <div class="pwd-rules-checklist" style="font-size: 10px; gap: 2px 6px;">
+                <span id="chk-len" class="rule-item">8+ caracteres</span>
+                <span id="chk-num" class="rule-item">Números</span>
+                <span id="chk-upper" class="rule-item">Mayúscula</span>
+                <span id="chk-lower" class="rule-item">Minúscula</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-create-account">
+            Crear Usuario y Acceder
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Alerta de Éxito / Finalización de Sesión (Mockup 3) -->
+      {% if notice %}
+      <div class="alert-box alert-box-success">
+        <span class="alert-icon">
+          <!-- Icono de palomita en círculo (✓) -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+        </span>
+        <div>{{ notice }}</div>
+      </div>
+      {% endif %}
+
+      <form action="/login" method="POST" autocomplete="on">
+        <!-- Campo: Identificador con botón ? -->
+        <div class="form-group">
+          <div class="label-with-help">
+            <label class="form-label" for="identificador">Identificador (Correo o Usuario)*</label>
+            <button type="button" class="btn-help-tooltip" data-tooltip="Ingresa tu correo con '@' (ej: admin@sistema.mx) o tu nombre de usuario registrado." aria-label="Ayuda para identificador">?</button>
+          </div>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon {% if has_error %}input-icon-error{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <input 
+              type="text" 
+              id="identificador" 
+              name="identificador" 
+              class="form-input {% if has_error %}form-input-error{% endif %}" 
+              placeholder="Ingresa tu correo o usuario" 
+              value="{{ identifier_val }}" 
+              required 
+              autofocus
+            >
+          </div>
+        </div>
+
+        <!-- Campo: Contraseña con botón ? -->
+        <div class="form-group" style="margin-bottom: 12px;">
+          <div class="label-with-help">
+            <label class="form-label" for="password">Contraseña *</label>
+            <button type="button" class="btn-help-tooltip" data-tooltip="Ingresa tu clave de acceso. Recuerda que las claves válidas contienen mínimo 8 caracteres, números, mayúsculas y minúsculas." aria-label="Ayuda para contraseña">?</button>
+          </div>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon {% if has_error %}input-icon-error{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-input {% if has_error %}form-input-error{% endif %}" 
+              placeholder="Ingresa tu contraseña" 
+              required
+            >
+          </div>
+        </div>
+
+        <!-- Apartado de Recuperar Contraseña -->
+        <div class="login-row-help">
+          <a href="/recuperar-password" class="link-forgot">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <!-- Botón de Envío -->
+        <button type="submit" class="btn-submit-login">
+          Ingresar al Sistema
+        </button>
+      </form>
+
+      <!-- Enlace para registrarse -->
+      <div class="login-footer-action">
+        <span>¿No tienes una cuenta?</span>
+        <a href="/register" class="link-register">Registrarse como Usuario</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Pie de página con zona horaria idéntico al mockup -->
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+  <script src="/static/js/password_checker.js"></script>
+  <script>
+    if (document.getElementById("quick_password")) {
+      initPasswordChecker("quick_password", "quick-pwd-fill", "quick-pwd-text");
+    }
+  </script>
+
+</body>
+</html>
+

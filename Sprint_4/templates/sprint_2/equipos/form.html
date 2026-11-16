@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ form_title }} - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Principal Corporativo -->
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <ul class="nav-links">
+          <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+          <li><a href="/tickets" class="nav-link">Tickets</a></li>
+          <li><a href="/equipos" class="nav-link active">Equipos</a></li>
+          {% if user.rol == "Admin" %}
+          <li><a href="/admin/areas" class="nav-link">Catálogos / Áreas</a></li>
+          <li><a href="/admin/usuarios" class="nav-link">Gestión de Usuarios</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="user-profile-menu">
+          <div class="user-meta">
+            <span class="user-name">{{ user.nombre_completo }}</span>
+            <span class="badge-role badge-role-admin">Administrador</span>
+          </div>
+          <a href="/logout" class="btn-logout" title="Cerrar Sesión">Salir</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">{{ form_title }}</h1>
+        <p class="page-description">Mantenimiento de catálogos y configuración de periodicidad preventiva (HU-04)</p>
+      </div>
+      <div>
+        <a href="/equipos" class="btn-secondary">Volver al Catálogo</a>
+      </div>
+    </div>
+
+    {% if error_msg %}
+    <div class="alert-box alert-box-error">
+      <span class="alert-icon">!</span>
+      <div>{{ error_msg }}</div>
+    </div>
+    {% endif %}
+
+    <div class="content-card" style="padding: 28px; max-width: 800px; margin: 0 auto;">
+      <form action="{{ form_action }}" method="POST">
+        
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label class="form-label" for="codigo">Código Único de Equipo *</label>
+            <input 
+              type="text" 
+              id="codigo" 
+              name="codigo" 
+              class="form-input" 
+              placeholder="Ej: EQ-PLC-008" 
+              value="{{ eq.codigo if eq else form_codigo }}" 
+              style="padding-left: 14px; text-transform: uppercase;"
+              required
+            >
+          </div>
+          <div>
+            <label class="form-label" for="nombre">Nombre Descriptivo del Equipo *</label>
+            <input 
+              type="text" 
+              id="nombre" 
+              name="nombre" 
+              class="form-input" 
+              placeholder="Ej: PLC Siemens S7-1500 Estación 2" 
+              value="{{ eq.nombre if eq else form_nombre }}" 
+              style="padding-left: 14px;"
+              required
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label class="form-label" for="marca">Marca *</label>
+            <input 
+              type="text" 
+              id="marca" 
+              name="marca" 
+              class="form-input" 
+              placeholder="Ej: Siemens, Fanuc, Haas" 
+              value="{{ eq.marca if eq else form_marca }}" 
+              style="padding-left: 14px;"
+              required
+            >
+          </div>
+          <div>
+            <label class="form-label" for="modelo">Modelo *</label>
+            <input 
+              type="text" 
+              id="modelo" 
+              name="modelo" 
+              class="form-input" 
+              placeholder="Ej: CPU 1516-3 PN/DP" 
+              value="{{ eq.modelo if eq else form_modelo }}" 
+              style="padding-left: 14px;"
+              required
+            >
+          </div>
+          <div>
+            <label class="form-label" for="numero_serie">Número de Serie *</label>
+            <input 
+              type="text" 
+              id="numero_serie" 
+              name="numero_serie" 
+              class="form-input" 
+              placeholder="Ej: SN-2026-9912" 
+              value="{{ eq.numero_serie if eq else form_serie }}" 
+              style="padding-left: 14px;"
+              required
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label class="form-label" for="area_id">Área de Localización *</label>
+            <select id="area_id" name="area_id" class="form-input" style="padding-left: 10px;" required>
+              <option value="">-- Seleccionar Área --</option>
+              {% for a in areas %}
+              <option value="{{ a.id }}" {% if (eq and eq.area_id == a.id) or form_area_id == a.id|string %}selected{% endif %}>
+                {{ a.nombre }} ({{ a.codigo }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="ubicacion_especifica">Ubicación Específica / Celda</label>
+            <input 
+              type="text" 
+              id="ubicacion_especifica" 
+              name="ubicacion_especifica" 
+              class="form-input" 
+              placeholder="Ej: Gabinete Eléctrico G-02, Celda 4" 
+              value="{{ eq.ubicacion_especifica if eq else form_ubicacion }}" 
+              style="padding-left: 14px;"
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <div>
+            <label class="form-label" for="periodicidad_dias">Periodicidad Preventiva (Días) *</label>
+            <input 
+              type="number" 
+              id="periodicidad_dias" 
+              name="periodicidad_dias" 
+              class="form-input" 
+              min="1" 
+              max="1825"
+              placeholder="Ej: 30, 60, 90, 180, 365" 
+              value="{{ eq.periodicidad_dias if eq else (form_periodicidad or 90) }}" 
+              style="padding-left: 14px;"
+              required
+            >
+            <span style="font-size: 11.5px; color: #64748b;">Frecuencia programada para el mantenimiento preventivo.</span>
+          </div>
+
+          <div>
+            <label class="form-label" for="fecha_ultimo_mantenimiento">Fecha Último Mantenimiento</label>
+            <input 
+              type="date" 
+              id="fecha_ultimo_mantenimiento" 
+              name="fecha_ultimo_mantenimiento" 
+              class="form-input" 
+              value="{{ eq.fecha_ultimo_mantenimiento if eq else form_fecha_ultimo }}" 
+              style="padding-left: 14px;"
+            >
+          </div>
+
+          <div>
+            <label class="form-label" for="estado">Estado del Equipo *</label>
+            <select id="estado" name="estado" class="form-input" style="padding-left: 10px;" required>
+              <option value="Activo" {% if (eq and eq.estado == 'Activo') or form_estado == 'Activo' %}selected{% endif %}>Activo</option>
+              <option value="Inactivo" {% if (eq and eq.estado == 'Inactivo') or form_estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+              <option value="En Mantenimiento" {% if (eq and eq.estado == 'En Mantenimiento') or form_estado == 'En Mantenimiento' %}selected{% endif %}>En Mantenimiento</option>
+              <option value="Fuera de Servicio" {% if (eq and eq.estado == 'Fuera de Servicio') or form_estado == 'Fuera de Servicio' %}selected{% endif %}>Fuera de Servicio</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+          <a href="/equipos" class="btn-secondary">Cancelar</a>
+          <button type="submit" class="btn-primary">
+            {{ 'Guardar Cambios' if eq else 'Registrar Equipo' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+</body>
+</html>
+

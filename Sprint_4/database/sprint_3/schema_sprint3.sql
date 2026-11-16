@@ -1,0 +1,71 @@
+-- =========================================================================
+-- ESQUEMA SPRINT 3: ATENCIÓN, SEGUIMIENTO, TRANSICIONES FSM, TIEMPOS Y BITÁCORA
+-- Historias de Usuario: HU-07, HU-08, HU-09
+-- Automatización y Software del Bajío
+-- =========================================================================
+
+-- Tabla de Tickets Completa con soporte para:
+-- - HU-07: Asignación, clasificación y motivo obligatorio de reasignación
+-- - HU-08: FSM con estados extendidos (Cancelado, Duplicado), motivos de espera,
+--          vinculación a ticket relacionado y marcas de tiempo de atención/resolución/cierre
+-- - HU-09: Integración de bitácora cronológica inmutable y control de participantes
+CREATE TABLE IF NOT EXISTS tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo TEXT UNIQUE NOT NULL,
+    titulo TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    situacion_problema TEXT,
+    detector_nombre TEXT,
+    categoria TEXT NOT NULL,
+    prioridad TEXT NOT NULL CHECK(prioridad IN ('Baja', 'Media', 'Alta', 'Urgente')),
+    estado TEXT NOT NULL DEFAULT 'Abierto' CHECK(estado IN ('Abierto', 'En Proceso', 'En Espera', 'Resuelto', 'Cerrado', 'Cancelado', 'Duplicado')),
+    solicitante_id INTEGER NOT NULL REFERENCES usuarios(id),
+    responsable_id INTEGER REFERENCES usuarios(id),
+    equipo_id INTEGER REFERENCES equipos(id),
+    area_id INTEGER REFERENCES areas(id),
+    ubicacion_equipo TEXT,
+    ticket_relacionado_id INTEGER REFERENCES tickets(id),
+    motivo_reasignacion TEXT,
+    motivo_espera TEXT,
+    motivo_cancelacion TEXT,
+    fecha_inicio_atencion TIMESTAMP,
+    fecha_resolucion TIMESTAMP,
+    fecha_cierre TIMESTAMP,
+    tiempo_espera_minutos INTEGER DEFAULT 0,
+    ultima_fecha_espera TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Evidencias Técnicas Adicionales durante la atención (HU-09: <= 10 MB)
+CREATE TABLE IF NOT EXISTS ticket_adjuntos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    usuario_id INTEGER REFERENCES usuarios(id),
+    nombre_archivo TEXT NOT NULL,
+    nombre_original TEXT NOT NULL,
+    tamano_bytes INTEGER NOT NULL,
+    tamano_formateado TEXT NOT NULL,
+    mime_type TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Historial, Bitácora y Auditoría Inmutable (HU-07, HU-08, HU-09)
+CREATE TABLE IF NOT EXISTS ticket_historial (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+    accion TEXT NOT NULL,
+    comentario TEXT,
+    estado_anterior TEXT,
+    estado_nuevo TEXT,
+    responsable_anterior_id INTEGER REFERENCES usuarios(id),
+    responsable_nuevo_id INTEGER REFERENCES usuarios(id),
+    motivo_detalle TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_historial_ticket ON ticket_historial(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_historial_usuario ON ticket_historial(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_adjuntos_ticket ON ticket_adjuntos(ticket_id);
+

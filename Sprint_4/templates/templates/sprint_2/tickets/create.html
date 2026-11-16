@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Solicitud de Ticket - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Principal Corporativo -->
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <ul class="nav-links">
+          <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+          <li><a href="/tickets" class="nav-link active">Tickets</a></li>
+          <li><a href="/equipos" class="nav-link">Catálogo</a></li>
+          <li><a href="/admin/areas" class="nav-link">Áreas</a></li>
+          {% if user.rol in ("Admin", "Responsable") %}
+          <li><a href="/reportes" class="nav-link">Reportes</a></li>
+          {% endif %}
+          {% if user.rol == "Admin" %}
+          <li><a href="/admin/usuarios" class="nav-link">Gestión de Usuarios</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="user-profile-menu">
+          <div class="user-meta">
+            <span class="user-name">{{ user.nombre_completo }}</span>
+            {% if user.rol == "Admin" %}
+              <span class="badge-role badge-role-admin">Administrador</span>
+            {% elif user.rol == "Responsable" %}
+              <span class="badge-role badge-role-responsable">Responsable Técnico</span>
+            {% else %}
+              <span class="badge-role badge-role-usuario">Usuario Solicitante</span>
+            {% endif %}
+          </div>
+          <a href="/logout" class="btn-logout" title="Cerrar Sesión">Salir</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Registrar Solicitud de Ticket con Equipo Vinculado</h1>
+        <p class="page-description">Vincule un equipo activo del catálogo, describa la anomalía detectada y adjunte evidencia técnica (HU-05)</p>
+      </div>
+      <div>
+        <a href="/tickets" class="btn-secondary">Volver al Listado</a>
+      </div>
+    </div>
+
+    {% if error_msg %}
+    <div class="alert-box alert-box-error">
+      <span class="alert-icon">!</span>
+      <div>{{ error_msg }}</div>
+    </div>
+    {% endif %}
+
+    <div class="content-card" style="padding: 28px; max-width: 820px; margin: 0 auto;">
+      <form action="/tickets/nuevo" method="POST" enctype="multipart/form-data">
+        
+        <!-- Título del Ticket -->
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label" for="titulo">Título o Asunto de la Incidencia *</label>
+          <input 
+            type="text" 
+            id="titulo" 
+            name="titulo" 
+            class="form-input" 
+            placeholder="Ej: Falla en variador de velocidad por sobrecorriente E-04" 
+            value="{{ form_titulo }}" 
+            style="padding-left: 14px;"
+            required
+          >
+          <span style="font-size: 11.5px; color: #64748b;">Resumen breve y claro de la anomalía o requerimiento.</span>
+        </div>
+
+        <!-- Selección de Equipo Activo (HU-05) y Persona que detectó la falla -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 18px;">
+          <div>
+            <label class="form-label" for="equipo_id">Equipo Activo Relacionado * (HU-05)</label>
+            <select id="equipo_id" name="equipo_id" class="form-input" style="padding-left: 10px;" required>
+              <option value="">-- Seleccionar Equipo Activo --</option>
+              {% for eq in equipos_activos %}
+              <option value="{{ eq.id }}" {% if form_equipo_id == eq.id|string %}selected{% endif %}>
+                [{{ eq.codigo }}] {{ eq.nombre }} - {{ eq.area_nombre }}
+              </option>
+              {% endfor %}
+            </select>
+            <span style="font-size: 11.5px; color: #64748b;">Solo se permite vincular equipos en estado Activo.</span>
+          </div>
+
+          <div>
+            <label class="form-label" for="detector_nombre">Detectado Por * (HU-05)</label>
+            <input 
+              type="text" 
+              id="detector_nombre" 
+              name="detector_nombre" 
+              class="form-input" 
+              placeholder="Ej: Ing. Juan Pérez (Operador Turno Matutino)" 
+              value="{{ form_detector or user.nombre_completo }}" 
+              style="padding-left: 14px;"
+              required
+            >
+            <span style="font-size: 11.5px; color: #64748b;">Persona o rol de turno que detectó la anomalía física.</span>
+          </div>
+        </div>
+
+        <!-- Categoría, Prioridad y Ubicación específica -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 18px;">
+          <div>
+            <label class="form-label" for="categoria">Categoría del Servicio *</label>
+            <select id="categoria" name="categoria" class="form-input" style="padding-left: 10px;" required>
+              {% for cat in categorias %}
+              <option value="{{ cat.valor }}" {% if form_categoria == cat.valor %}selected{% endif %}>
+                {{ cat.valor }}
+              </option>
+              {% endfor %}
+              {% if not categorias %}
+              <option value="Automatización Industrial">Automatización Industrial</option>
+              <option value="Mantenimiento Preventivo">Mantenimiento Preventivo</option>
+              <option value="Mantenimiento Correctivo">Mantenimiento Correctivo</option>
+              <option value="Electricidad y Fuerza">Electricidad y Fuerza</option>
+              <option value="Mecánica y Neumática">Mecánica y Neumática</option>
+              <option value="Redes y Comunicaciones">Redes y Comunicaciones</option>
+              {% endif %}
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label" for="prioridad">Nivel de Prioridad *</label>
+            <select id="prioridad" name="prioridad" class="form-input" style="padding-left: 10px;" required>
+              <option value="Media" {% if form_prioridad == 'Media' or not form_prioridad %}selected{% endif %}>Media</option>
+              <option value="Baja" {% if form_prioridad == 'Baja' %}selected{% endif %}>Baja</option>
+              <option value="Alta" {% if form_prioridad == 'Alta' %}selected{% endif %}>Alta</option>
+              <option value="Urgente" {% if form_prioridad == 'Urgente' %}selected{% endif %}>Urgente (Paro de Producción)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label" for="ubicacion_equipo">Ubicación / Celda Específica</label>
+            <input 
+              type="text" 
+              id="ubicacion_equipo" 
+              name="ubicacion_equipo" 
+              class="form-input" 
+              placeholder="Opcional (se toma del equipo si está vacío)" 
+              value="{{ form_ubicacion }}" 
+              style="padding-left: 14px;"
+            >
+          </div>
+        </div>
+
+        {% if user.rol == "Admin" %}
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label" for="responsable_id">Asignar Responsable Técnico (Exclusivo Administrador)</label>
+          <select id="responsable_id" name="responsable_id" class="form-input" style="padding-left: 10px;">
+            <option value="">-- Sin asignar por el momento --</option>
+            {% for r in responsables %}
+            <option value="{{ r.id }}" {% if form_responsable_id == r.id|string %}selected{% endif %}>
+              {{ r.nombre_completo }} ({{ r.username }} - {{ r.email }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <!-- Situación y Descripción Detallada del Problema (HU-05) -->
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="form-label" for="situacion_problema">Situación / Descripción Detallada de la Falla * (HU-05)</label>
+          <textarea 
+            id="situacion_problema" 
+            name="situacion_problema" 
+            class="form-input" 
+            rows="4" 
+            style="height: auto; padding: 12px 14px; resize: vertical;" 
+            placeholder="Describa la situación del equipo, códigos de alarma, comportamiento anómalo o condiciones operativas..." 
+            required
+          >{{ form_situacion or form_descripcion }}</textarea>
+        </div>
+
+        <!-- Evidencia Adjunta (HU-05: <= 10 MB) -->
+        <div class="form-group" style="margin-bottom: 24px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px;">
+          <label class="form-label" for="evidencia" style="display: flex; align-items: center; justify-content: space-between;">
+            <span>Evidencia Adjunta (Fotografía, Reporte o Diagrama)</span>
+            <span style="font-weight: 600; color: #2563eb; font-size: 11.5px;">Límite permitido: ≤ 10 MB</span>
+          </label>
+          <input 
+            type="file" 
+            id="evidencia" 
+            name="evidencia" 
+            class="form-input" 
+            style="padding: 6px; height: auto;"
+            accept=".png,.jpg,.jpeg,.gif,.pdf,.txt,.docx,.xlsx,.zip"
+          >
+          <div style="font-size: 11.5px; color: #64748b; margin-top: 6px;">
+            Formatos admitidos: Imágenes (PNG, JPG), Documentos PDF, DOCX, TXT, XLSX. Máximo 10 MB por archivo.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+          <a href="/tickets" class="btn-secondary">Cancelar</a>
+          <button type="submit" class="btn-primary">
+            Registrar Solicitud con Equipo
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+</body>
+</html>

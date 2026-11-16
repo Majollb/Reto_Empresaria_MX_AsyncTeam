@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tickets de Mantenimiento - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Principal Corporativo -->
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <ul class="nav-links">
+          <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+          <li><a href="/tickets" class="nav-link active">Tickets</a></li>
+          <li><a href="/equipos" class="nav-link">Catálogo</a></li>
+          <li><a href="/admin/areas" class="nav-link">Áreas</a></li>
+          {% if user.rol in ("Admin", "Responsable") %}
+          <li><a href="/reportes" class="nav-link">Reportes</a></li>
+          {% endif %}
+          {% if user.rol == "Admin" %}
+          <li><a href="/admin/usuarios" class="nav-link">Gestión de Usuarios</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="user-profile-menu">
+          <div class="user-meta">
+            <span class="user-name">{{ user.nombre_completo }}</span>
+            {% if user.rol == "Admin" %}
+              <span class="badge-role badge-role-admin">Administrador</span>
+            {% elif user.rol == "Responsable" %}
+              <span class="badge-role badge-role-responsable">Responsable Técnico</span>
+            {% else %}
+              <span class="badge-role badge-role-usuario">Usuario Solicitante</span>
+            {% endif %}
+          </div>
+
+          <a href="/tickets/nuevo" class="btn-primary" style="padding: 6px 12px; font-size: 12.5px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nuevo Ticket
+          </a>
+
+          <a href="/logout" class="btn-logout" title="Cerrar Sesión Segura">Salir</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">
+          {% if user.rol == "Admin" %}
+            Todos los Tickets de Mantenimiento
+          {% elif user.rol == "Responsable" %}
+            Tickets Asignados para Atención Técnica
+          {% else %}
+            Mis Solicitudes de Tickets
+          {% endif %}
+        </h1>
+        <p class="page-description">Consulta, búsqueda por folio y filtrado avanzado para participantes autorizados (HU-06)</p>
+      </div>
+      <div>
+        <a href="/tickets/nuevo" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Crear Nuevo Ticket
+        </a>
+      </div>
+    </div>
+
+    <!-- Banner explicativo de control de acceso por rol (HU-02 y HU-06) -->
+    <div class="scope-banner" style="margin-bottom: 20px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <div>
+        {% if user.rol == "Admin" %}
+          <strong>Control RBAC Total (Administrador):</strong> Tienes visibilidad integral de todos los tickets del sistema y puedes filtrar por cualquier solicitante o responsable asignado.
+        {% elif user.rol == "Responsable" %}
+          <strong>Control RBAC de Técnico:</strong> Visualizas exclusivamente los tickets asignados a tu responsabilidad técnica o los creados por ti.
+        {% else %}
+          <strong>Control RBAC de Solicitante:</strong> Solo tienes acceso a las solicitudes registradas directamente por tu cuenta.
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Panel de Búsqueda y Filtros Avanzados (HU-06) -->
+    <div class="content-card" style="padding: 18px 20px; margin-bottom: 22px;">
+      <form action="/tickets" method="GET">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px;">
+          
+          <!-- Búsqueda por Folio o Texto (HU-06) -->
+          <div style="grid-column: span 2; min-width: 220px;">
+            <label class="form-label" style="font-size: 11.5px; margin-bottom: 4px;">Buscar por Folio o Palabra Clave</label>
+            <input 
+              type="text" 
+              name="q" 
+              class="form-input" 
+              placeholder="Ej: TK-2026-001, variador, robot..." 
+              value="{{ search }}"
+              style="height: 38px; padding-left: 14px;"
+            >
+          </div>
+
+          <!-- Filtro por Equipo (HU-06) -->
+          <div>
+            <label class="form-label" style="font-size: 11.5px; margin-bottom: 4px;">Equipo</label>
+            <select name="equipo" class="form-input" style="height: 38px; padding: 0 8px;">
+              <option value="">Todos los Equipos</option>
+              {% for eq in filter_equipos %}
+              <option value="{{ eq.id }}" {% if equipo_filter == eq.id|string %}selected{% endif %}>
+                {{ eq.codigo }} - {{ eq.nombre }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Filtro por Área (HU-06) -->
+          <div>
+            <label class="form-label" style="font-size: 11.5px; margin-bottom: 4px;">Área</label>
+            <select name="area" class="form-input" style="height: 38px; padding: 0 8px;">
+              <option value="">Todas las Áreas</option>
+              {% for a in filter_areas %}
+              <option value="{{ a.id }}" {% if area_filter == a.id|string %}selected{% endif %}>
+                {{ a.nombre }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Filtro por Prioridad (HU-06) -->
+          <div>
+            <label class="form-label" style="font-size: 11.5px; margin-bottom: 4px;">Prioridad</label>
+            <select name="prioridad" class="form-input" style="height: 38px; padding: 0 8px;">
+              <option value="">Todas</option>
+              <option value="Urgente" {% if prioridad_filter == 'Urgente' %}selected{% endif %}>Urgente</option>
+              <option value="Alta" {% if prioridad_filter == 'Alta' %}selected{% endif %}>Alta</option>
+              <option value="Media" {% if prioridad_filter == 'Media' %}selected{% endif %}>Media</option>
+              <option value="Baja" {% if prioridad_filter == 'Baja' %}selected{% endif %}>Baja</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Estado (HU-06) -->
+          <div>
+            <label class="form-label" style="font-size: 11.5px; margin-bottom: 4px;">Estado</label>
+            <select name="estado" class="form-input" style="height: 38px; padding: 0 8px;">
+              <option value="">Todos los Estados</option>
+              <option value="Abierto" {% if estado_filter == 'Abierto' %}selected{% endif %}>Abierto</option>
+              <option value="En Proceso" {% if estado_filter == 'En Proceso' %}selected{% endif %}>En Proceso</option>
+              <option value="En Espera" {% if estado_filter == 'En Espera' %}selected{% endif %}>En Espera</option>
+              <option value="Resuelto" {% if estado_filter == 'Resuelto' %}selected{% endif %}>Resuelto</option>
+              <option value="Cerrado" {% if estado_filter == 'Cerrado' %}selected{% endif %}>Cerrado</option>
+            </select>
+          </div>
+
+          {% if user.rol in ("Admin", "Responsable") and filter_solicitantes %}
+          <!-- Filtro por Solicitante (HU-06) -->
+          <div>
+            <label class="form-label" style="font-size: 11.5px; margin-bottom: 4px;">Solicitante</label>
+            <select name="solicitante" class="form-input" style="height: 38px; padding: 0 8px;">
+              <option value="">Todos los Solicitantes</option>
+              {% for s in filter_solicitantes %}
+              <option value="{{ s.id }}" {% if solicitante_filter == s.id|string %}selected{% endif %}>
+                {{ s.nombre_completo }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          {% if user.rol == "Admin" and filter_responsables %}
+          <!-- Filtro por Responsable (HU-06: Admin) -->
+          <div>
+            <label class="form-label" style="font-size: 11.5px; margin-bottom: 4px;">Técnico Responsable</label>
+            <select name="responsable" class="form-input" style="height: 38px; padding: 0 8px;">
+              <option value="">Todos los Responsables</option>
+              {% for r in filter_responsables %}
+              <option value="{{ r.id }}" {% if responsable_filter == r.id|string %}selected{% endif %}>
+                {{ r.nombre_completo }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 10px;">
+          {% if search or estado_filter or prioridad_filter or equipo_filter or area_filter or solicitante_filter or responsable_filter %}
+            <a href="/tickets" class="btn-secondary" style="height: 34px; line-height: 32px; padding: 0 14px; font-size: 12.5px;">Limpiar Filtros</a>
+          {% endif %}
+          <button type="submit" class="btn-primary" style="height: 34px; padding: 0 16px; font-size: 13px;">
+            Aplicar Filtros
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tabla Principal de Tickets con Datos Coherentes (HU-06) -->
+    <div class="content-card">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Título y Situación</th>
+              <th>Equipo Vinculado</th>
+              <th>Área</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Solicitante</th>
+              <th>Responsable</th>
+              <th>Evidencia</th>
+              <th>Fecha</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tickets %}
+            <tr>
+              <td>
+                <a href="/tickets/{{ t.id }}" style="text-decoration: none;">
+                  <strong style="color: #1d4ed8; font-family: monospace; font-size: 13.5px;">{{ t.codigo }}</strong>
+                </a>
+              </td>
+              <td style="max-width: 240px;">
+                <div style="font-weight: 600; color: #1e3a5f;">{{ t.titulo }}</div>
+                <div style="font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ t.situacion_problema or t.descripcion }}
+                </div>
+              </td>
+              <td>
+                {% if t.equipo_nombre %}
+                  <div style="font-weight: 600; font-size: 13px; color: #0f2444;">{{ t.equipo_codigo }}</div>
+                  <div style="font-size: 11.5px; color: #64748b;">{{ t.equipo_nombre }}</div>
+                {% else %}
+                  <span style="color: #94a3b8; font-style: italic; font-size: 12px;">Sin equipo</span>
+                {% endif %}
+              </td>
+              <td>
+                <span style="font-size: 12.5px; color: #334155;">{{ t.area_nombre or 'N/A' }}</span>
+              </td>
+              <td>
+                {% if t.prioridad == "Urgente" %}
+                  <span class="badge-prio prio-urgente">Urgente</span>
+                {% elif t.prioridad == "Alta" %}
+                  <span class="badge-prio prio-alta">Alta</span>
+                {% elif t.prioridad == "Media" %}
+                  <span class="badge-prio prio-media">Media</span>
+                {% else %}
+                  <span class="badge-prio prio-baja">Baja</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if t.estado == "Abierto" %}
+                  <span class="badge-status status-abierto"><span class="badge-status-dot"></span>Abierto</span>
+                {% elif t.estado == "En Proceso" %}
+                  <span class="badge-status status-en-proceso"><span class="badge-status-dot"></span>En Proceso</span>
+                {% elif t.estado == "En Espera" %}
+                  <span class="badge-status status-en-espera"><span class="badge-status-dot"></span>En Espera</span>
+                {% elif t.estado == "Resuelto" %}
+                  <span class="badge-status status-resuelto"><span class="badge-status-dot"></span>Resuelto</span>
+                {% else %}
+                  <span class="badge-status status-cerrado"><span class="badge-status-dot"></span>Cerrado</span>
+                {% endif %}
+              </td>
+              <td style="font-size: 13px;">{{ t.solicitante_nombre }}</td>
+              <td style="font-size: 13px;">
+                {% if t.responsable_nombre %}
+                  {{ t.responsable_nombre }}
+                {% else %}
+                  <span style="color: #94a3b8; font-style: italic;">Sin asignar</span>
+                {% endif %}
+              </td>
+              <td style="text-align: center;">
+                {% if t.total_adjuntos and t.total_adjuntos > 0 %}
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; background: #eff6ff; color: #1d4ed8; padding: 2px 7px; border-radius: 10px; font-weight: 600;">
+                    📎 {{ t.total_adjuntos }}
+                  </span>
+                {% else %}
+                  <span style="color: #cbd5e1;">—</span>
+                {% endif %}
+              </td>
+              <td style="font-size: 12px; color: #64748b; white-space: nowrap;">
+                {{ t.created_at[:16] }}
+              </td>
+              <td>
+                <a href="/tickets/{{ t.id }}" class="btn-secondary" style="padding: 4px 10px; font-size: 12px;">Ver Detalle</a>
+              </td>
+            </tr>
+            {% endfor %}
+
+            <!-- Estado 'Sin Resultados' Estilizado y Claro (HU-06) -->
+            {% if not tickets %}
+            <tr>
+              <td colspan="11" style="text-align: center; padding: 48px 20px;">
+                <div style="max-width: 420px; margin: 0 auto;">
+                  <div style="font-size: 36px; margin-bottom: 10px;">🔍</div>
+                  <h3 style="font-size: 16px; font-weight: 600; color: #1e3a5f; margin-bottom: 6px;">
+                    No se encontraron tickets
+                  </h3>
+                  <p style="font-size: 13.5px; color: #64748b; margin-bottom: 16px;">
+                    No hay registros que coincidan con los filtros aplicados o dentro de tu ámbito autorizado.
+                  </p>
+                  <a href="/tickets" class="btn-secondary" style="display: inline-block;">
+                    Restablecer y Limpiar Filtros
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+</body>
+</html>

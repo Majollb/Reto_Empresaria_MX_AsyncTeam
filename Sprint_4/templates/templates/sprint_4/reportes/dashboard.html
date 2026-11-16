@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes e Indicadores Ejecutivos - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Principal Corporativo -->
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <ul class="nav-links">
+          <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+          <li><a href="/tickets" class="nav-link">Tickets</a></li>
+          <li><a href="/equipos" class="nav-link">Catálogo</a></li>
+          <li><a href="/admin/areas" class="nav-link">Áreas</a></li>
+          <li><a href="/reportes" class="nav-link active">Reportes</a></li>
+          {% if user.rol == "Admin" %}
+          <li><a href="/admin/usuarios" class="nav-link">Gestión de Usuarios</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="user-profile-menu">
+          <div class="user-meta">
+            <span class="user-name">{{ user.nombre_completo }}</span>
+            {% if user.rol == "Admin" %}
+              <span class="badge-role badge-role-admin">Administrador</span>
+            {% else %}
+              <span class="badge-role badge-role-responsable">Responsable Técnico</span>
+            {% endif %}
+          </div>
+          <a href="/logout" class="btn-logout" title="Cerrar Sesión">Salir</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header-row" style="margin-bottom: 20px;">
+      <div>
+        <h1 class="page-title">Resumen Ejecutivo de Tickets y Reportes (HU-12)</h1>
+        <p class="page-description">
+          Análisis de situaciones de atención, métricas de resolución, semáforo preventivo y exportación autorizada
+        </p>
+      </div>
+      <div>
+        <a href="/reportes/exportar-csv?{{ current_query_string }}" class="btn-primary" style="background: #0284c7; border-color: #0369a1; display: inline-flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Exportar a CSV (Excel)
+        </a>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros Combinados (HU-12) -->
+    <div class="filter-card" style="margin-bottom: 24px;">
+      <form action="/reportes" method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+        <div>
+          <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Estado:</label>
+          <select name="estado" class="form-input" style="height: 38px; font-size: 13px; width: 140px;">
+            <option value="">Todos</option>
+            <option value="Abierto" {% if filters.estado == 'Abierto' %}selected{% endif %}>Abierto</option>
+            <option value="En Proceso" {% if filters.estado == 'En Proceso' %}selected{% endif %}>En Proceso</option>
+            <option value="En Espera" {% if filters.estado == 'En Espera' %}selected{% endif %}>En Espera</option>
+            <option value="Resuelto" {% if filters.estado == 'Resuelto' %}selected{% endif %}>Resuelto</option>
+            <option value="Cerrado" {% if filters.estado == 'Cerrado' %}selected{% endif %}>Cerrado</option>
+            <option value="Cancelado" {% if filters.estado == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+            <option value="Duplicado" {% if filters.estado == 'Duplicado' %}selected{% endif %}>Duplicado</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Tipo Cierre:</label>
+          <select name="tipo_cierre" class="form-input" style="height: 38px; font-size: 13px; width: 140px;">
+            <option value="">Todos</option>
+            <option value="Con Solución" {% if filters.tipo_cierre == 'Con Solución' %}selected{% endif %}>Con Solución</option>
+            <option value="Sin Solución" {% if filters.tipo_cierre == 'Sin Solución' %}selected{% endif %}>Sin Solución</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Prioridad:</label>
+          <select name="prioridad" class="form-input" style="height: 38px; font-size: 13px; width: 130px;">
+            <option value="">Todas</option>
+            <option value="Urgente" {% if filters.prioridad == 'Urgente' %}selected{% endif %}>Urgente</option>
+            <option value="Alta" {% if filters.prioridad == 'Alta' %}selected{% endif %}>Alta</option>
+            <option value="Media" {% if filters.prioridad == 'Media' %}selected{% endif %}>Media</option>
+            <option value="Baja" {% if filters.prioridad == 'Baja' %}selected{% endif %}>Baja</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Categoría:</label>
+          <select name="categoria" class="form-input" style="height: 38px; font-size: 13px; width: 170px;">
+            <option value="">Todas</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.valor }}" {% if filters.categoria == cat.valor %}selected{% endif %}>{{ cat.valor }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Área Industrial:</label>
+          <select name="area_id" class="form-input" style="height: 38px; font-size: 13px; width: 160px;">
+            <option value="">Todas</option>
+            {% for ar in areas %}
+            <option value="{{ ar.id }}" {% if filters.area_id == ar.id|string %}selected{% endif %}>{{ ar.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Desde:</label>
+          <input type="date" name="fecha_desde" value="{{ filters.fecha_desde or '' }}" class="form-input" style="height: 38px; font-size: 12.5px; width: 135px;">
+        </div>
+
+        <div>
+          <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Hasta:</label>
+          <input type="date" name="fecha_hasta" value="{{ filters.fecha_hasta or '' }}" class="form-input" style="height: 38px; font-size: 12.5px; width: 135px;">
+        </div>
+
+        <button type="submit" class="btn-primary" style="height: 38px; padding: 0 16px;">Filtrar</button>
+        <a href="/reportes" class="btn-secondary" style="height: 38px; padding: 0 14px; line-height: 36px;">Limpiar</a>
+      </form>
+    </div>
+
+    <!-- Tarjetas KPI de Situaciones de Atención (HU-10 y HU-12) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div class="content-card" style="padding: 16px; border-left: 4px solid #1e3a5f;">
+        <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Total Filtrado</span>
+        <div style="font-size: 26px; font-weight: 800; color: #0f2444; margin-top: 4px;">{{ report.total_tickets }}</div>
+        <span style="font-size: 12px; color: #64748b;">Tickets evaluados</span>
+      </div>
+
+      <div class="content-card" style="padding: 16px; border-left: 4px solid #16a34a;">
+        <span style="font-size: 11.5px; color: #15803d; text-transform: uppercase; font-weight: 600;">Con Solución</span>
+        <div style="font-size: 26px; font-weight: 800; color: #166534; margin-top: 4px;">{{ report.situaciones.con_solucion }}</div>
+        <span style="font-size: 12px; color: #15803d;">Cierres satisfactorios</span>
+      </div>
+
+      <div class="content-card" style="padding: 16px; border-left: 4px solid #ea580c;">
+        <span style="font-size: 11.5px; color: #c2410c; text-transform: uppercase; font-weight: 600;">Sin Solución</span>
+        <div style="font-size: 26px; font-weight: 800; color: #9a3412; margin-top: 4px;">{{ report.situaciones.sin_solucion }}</div>
+        <span style="font-size: 12px; color: #c2410c;">Justificados por inviabilidad</span>
+      </div>
+
+      <div class="content-card" style="padding: 16px; border-left: 4px solid #f59e0b;">
+        <span style="font-size: 11.5px; color: #b45309; text-transform: uppercase; font-weight: 600;">Recurrencias</span>
+        <div style="font-size: 26px; font-weight: 800; color: #78350f; margin-top: 4px;">{{ report.situaciones.recurrencias }}</div>
+        <span style="font-size: 12px; color: #b45309;">Reapariciones vinculadas</span>
+      </div>
+
+      <div class="content-card" style="padding: 16px; border-left: 4px solid #0284c7;">
+        <span style="font-size: 11.5px; color: #0369a1; text-transform: uppercase; font-weight: 600;">En Espera</span>
+        <div style="font-size: 26px; font-weight: 800; color: #0c4a6e; margin-top: 4px;">{{ report.situaciones.en_espera }}</div>
+        <span style="font-size: 12px; color: #0369a1;">Pausas justificadas</span>
+      </div>
+    </div>
+
+    <!-- Tiempos de Atención Promedio y Semáforo Preventivo -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+      
+      <!-- Panel de Tiempos Promedio -->
+      <div class="content-card" style="padding: 22px;">
+        <h2 style="font-size: 15px; font-weight: 700; color: #1e3a5f; margin: 0 0 14px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+          Tiempos Promedio de Ciclo de Atención (HU-08 y HU-12)
+        </h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; border: 1px solid #e0f2fe; text-align: center;">
+            <div style="font-size: 11px; color: #0369a1; font-weight: 600; text-transform: uppercase;">Lead Time Promedio</div>
+            <div style="font-size: 18px; font-weight: 800; color: #0c4a6e; margin-top: 4px;">
+              {{ report.tiempos_promedio.lead_time_texto }}
+            </div>
+          </div>
+          <div style="background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fef3c7; text-align: center;">
+            <div style="font-size: 11px; color: #b45309; font-weight: 600; text-transform: uppercase;">Espera Promedio</div>
+            <div style="font-size: 18px; font-weight: 800; color: #78350f; margin-top: 4px;">
+              {{ report.tiempos_promedio.tiempo_espera_texto }}
+            </div>
+          </div>
+          <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #dcfce7; text-align: center;">
+            <div style="font-size: 11px; color: #15803d; font-weight: 600; text-transform: uppercase;">Neto Promedio</div>
+            <div style="font-size: 18px; font-weight: 800; color: #14532d; margin-top: 4px;">
+              {{ report.tiempos_promedio.tiempo_neto_texto }}
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; display: flex; gap: 10px; font-size: 12.5px; color: #64748b; justify-content: space-around;">
+          <span>Abiertos: <strong>{{ report.estados.Abierto }}</strong></span>
+          <span>En Proceso: <strong>{{ report.estados['En Proceso'] }}</strong></span>
+          <span>Resueltos: <strong>{{ report.estados.Resuelto }}</strong></span>
+          <span>Cerrados: <strong>{{ report.estados.Cerrado }}</strong></span>
+        </div>
+      </div>
+
+      <!-- Semáforo de Mantenimiento Preventivo (HU-04 + HU-12) -->
+      <div class="content-card" style="padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+          <h2 style="font-size: 15px; font-weight: 700; color: #1e3a5f; margin: 0;">
+            Semáforo Preventivo de Equipos (HU-12)
+          </h2>
+          <span style="font-size: 11.5px; color: #64748b;">
+            Total Activos: <strong>{{ report.preventivo.total_equipos_activos }}</strong>
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div style="background: #dcfce7; padding: 12px; border-radius: 6px; border: 1px solid #bbf7d0; text-align: center;">
+            <div style="font-size: 11px; color: #15803d; font-weight: 700; text-transform: uppercase;">Al Día</div>
+            <div style="font-size: 20px; font-weight: 800; color: #14532d; margin-top: 2px;">
+              {{ report.preventivo.al_dia_total }}
+            </div>
+            <span style="font-size: 10.5px; color: #15803d;">> 7 días</span>
+          </div>
+
+          <div style="background: #fef3c7; padding: 12px; border-radius: 6px; border: 1px solid #fde68a; text-align: center;">
+            <div style="font-size: 11px; color: #b45309; font-weight: 700; text-transform: uppercase;">Próximos</div>
+            <div style="font-size: 20px; font-weight: 800; color: #78350f; margin-top: 2px;">
+              {{ report.preventivo.proximo_total }}
+            </div>
+            <span style="font-size: 10.5px; color: #b45309;">≤ 7 días</span>
+          </div>
+
+          <div style="background: #fee2e2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca; text-align: center;">
+            <div style="font-size: 11px; color: #b91c1c; font-weight: 700; text-transform: uppercase;">Vencidos</div>
+            <div style="font-size: 20px; font-weight: 800; color: #7f1d1d; margin-top: 2px;">
+              {{ report.preventivo.vencido_total }}
+            </div>
+            <span style="font-size: 10.5px; color: #b91c1c;">Revisión urgente</span>
+          </div>
+        </div>
+
+        {% if report.preventivo.alertas %}
+        <div style="max-height: 110px; overflow-y: auto; font-size: 12px;">
+          <div style="font-weight: 700; color: #475569; margin-bottom: 4px;">Alertas Preventivas Activas:</div>
+          {% for al in report.preventivo.alertas %}
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #e2e8f0;">
+            <span style="color: #1e293b;"><strong>{{ al.codigo }}</strong> - {{ al.nombre }}</span>
+            <span style="{% if al.semaforo == 'vencido' %}color: #dc2626; font-weight: 700;{% else %}color: #d97706; font-weight: 600;{% endif %}">
+              {{ al.alerta_texto }}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div style="font-size: 12px; color: #16a34a; font-style: italic; text-align: center; padding-top: 8px;">
+          ✓ Todos los equipos industriales se encuentran actualmente al día con su mantenimiento preventivo.
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Tabla Detallada de Tickets del Resumen (HU-12) -->
+    <div class="content-card">
+      <div class="content-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="content-card-title">Listado de Atenciones Filtradas ({{ report.tickets|length }} registros)</h2>
+        <a href="/reportes/exportar-csv?{{ current_query_string }}" class="btn-secondary" style="font-size: 12px; padding: 4px 10px;">
+          Exportar Lista en CSV
+        </a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Título</th>
+              <th>Equipo / Área</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Situación Cierre</th>
+              <th>Solicitante</th>
+              <th>Responsable</th>
+              <th>Lead Time</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in report.tickets %}
+            <tr>
+              <td>
+                <a href="/tickets/{{ t.id }}" style="font-weight: 700; color: #1e3a5f; text-decoration: none; font-family: monospace;">
+                  {{ t.codigo }}
+                </a>
+                {% if t.es_recurrencia == 1 or t.tipo_relacion == 'Recurrencia' %}
+                  <span title="Atención derivada por recurrencia" style="cursor: help;">🔁</span>
+                {% endif %}
+              </td>
+              <td><strong>{{ t.titulo }}</strong></td>
+              <td>
+                <div>{{ t.equipo_codigo or 'N/A' }}</div>
+                <div style="font-size: 11px; color: #64748b;">{{ t.area_nombre or 'General' }}</div>
+              </td>
+              <td>
+                {% if t.prioridad == "Urgente" %}
+                  <span class="badge-priority priority-urgente">Urgente</span>
+                {% elif t.prioridad == "Alta" %}
+                  <span class="badge-priority priority-alta">Alta</span>
+                {% elif t.prioridad == "Media" %}
+                  <span class="badge-priority priority-media">Media</span>
+                {% else %}
+                  <span class="badge-priority priority-baja">Baja</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge-status status-{{ t.estado|lower|replace(' ', '-') }}">
+                  <span class="badge-status-dot"></span>{{ t.estado }}
+                </span>
+              </td>
+              <td>
+                {% if t.tipo_cierre == 'Con Solución' %}
+                  <span style="color: #15803d; font-weight: 600; font-size: 12px;">✓ Con Solución</span>
+                {% elif t.tipo_cierre == 'Sin Solución' %}
+                  <span style="color: #c2410c; font-weight: 600; font-size: 12px;">⚠️ Sin Solución</span>
+                {% elif t.estado == 'En Espera' %}
+                  <span style="color: #b45309; font-size: 12px;">Pausa/Espera</span>
+                {% else %}
+                  <span style="color: #94a3b8; font-size: 12px;">En curso</span>
+                {% endif %}
+              </td>
+              <td style="font-size: 12.5px;">{{ t.solicitante_nombre }}</td>
+              <td style="font-size: 12.5px;">{{ t.responsable_nombre or 'Sin Asignar' }}</td>
+              <td style="font-size: 12px; font-family: monospace;">
+                {{ t.tiempo_total_minutos }}m
+              </td>
+              <td>
+                <a href="/tickets/{{ t.id }}" class="btn-secondary" style="padding: 4px 8px; font-size: 11.5px;">
+                  Detalle
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 24px; color: #64748b;">
+                No se encontraron tickets para los filtros especificados.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <span>Zona horaria: {{ TIMEZONE_LABEL }} | Automatización y Software del Bajío</span>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
