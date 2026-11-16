@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or 'Página no encontrada' }} - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+    </div>
+  </header>
+
+  <main class="main-content" style="display: flex; align-items: center; justify-content: center; min-height: 60vh;">
+    <div class="content-card" style="max-width: 500px; padding: 40px; text-align: center;">
+      <div style="font-size: 54px; font-weight: 800; color: #cbd5e1; line-height: 1; margin-bottom: 12px;">404</div>
+      <h1 style="font-size: 19px; font-weight: 700; color: #1e293b; margin-bottom: 10px;">{{ title or 'Página No Encontrada' }}</h1>
+      <p style="font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 24px;">{{ message or 'El recurso al que intentas acceder no existe o fue reubicado.' }}</p>
+      <a href="/dashboard" class="btn-primary">Volver al Inicio</a>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+</body>
+</html>
+
