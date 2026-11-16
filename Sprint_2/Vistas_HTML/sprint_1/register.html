@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Registro de Usuario - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=3">
+</head>
+<body>
+
+  <!-- Encabezado superior -->
+  <header class="main-header">
+    <div class="header-container">
+      <div class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor central -->
+  <main class="login-page-wrapper">
+    <div class="circuit-bg-decor">
+      <svg class="circuit-svg" viewBox="0 0 1440 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 0 250 L 120 250 L 220 350 L 350 350" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="350" cy="350" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+        <path d="M 0 310 L 160 310 L 250 400 L 400 400" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="400" cy="400" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+        <path d="M 1440 250 L 1320 250 L 1220 350 L 1090 350" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="1090" cy="350" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+        <path d="M 1440 310 L 1280 310 L 1190 400 L 1040 400" stroke="#E2E8F0" stroke-width="1.8" fill="none" />
+        <circle cx="1040" cy="400" r="4.5" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" />
+      </svg>
+    </div>
+
+    <!-- Tarjeta Central de Registro -->
+    <div class="login-card" style="max-width: 460px;">
+      <div class="login-shield-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="8.5" cy="7" r="4"></circle>
+          <line x1="20" y1="8" x2="20" y2="14"></line>
+          <line x1="23" y1="11" x2="17" y2="11"></line>
+        </svg>
+      </div>
+
+      <h1 class="login-heading" style="margin-bottom: 4px;">REGISTRO DE USUARIO</h1>
+      <p style="text-align: center; color: #64748b; font-size: 13px; margin-bottom: 8px;">
+        Crea tu cuenta de solicitante de mantenimiento
+      </p>
+
+      <div style="text-align: center; margin-bottom: 18px;">
+        <span class="role-badge-usuario">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Rol asignado por defecto: Usuario
+        </span>
+      </div>
+
+      <!-- Alerta de Error -->
+      {% if error %}
+      <div class="alert-box alert-box-error">
+        <span class="alert-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </span>
+        <div>{{ error }}</div>
+      </div>
+      {% endif %}
+
+      <form action="/register" method="POST" autocomplete="on">
+        <!-- Campo: Nombre Completo con botón ? -->
+        <div class="form-group">
+          <div class="label-with-help">
+            <label class="form-label" for="nombre_completo">Nombre Completo *</label>
+            <button type="button" class="btn-help-tooltip" data-tooltip="Ingresa tu nombre y apellido(s) para identificarte en tus reportes de mantenimiento industrial." aria-label="Ayuda para nombre">?</button>
+          </div>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <input 
+              type="text" 
+              id="nombre_completo" 
+              name="nombre_completo" 
+              class="form-input" 
+              placeholder="Ej: Juan Pérez Morales" 
+              value="{{ nombre_completo }}" 
+              required 
+              autofocus
+            >
+          </div>
+        </div>
+
+        <!-- Campo: Correo Electrónico (con @ obligatoria) con botón ? -->
+        <div class="form-group">
+          <div class="label-with-help">
+            <label class="form-label" for="identificador">Correo Electrónico (con '@') *</label>
+            <button type="button" class="btn-help-tooltip" data-tooltip="El correo electrónico debe contener sí o sí el símbolo '@' y un dominio válido (ejemplo: usuario@bajio.mx)." aria-label="Ayuda para correo">?</button>
+          </div>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <input 
+              type="email" 
+              id="identificador" 
+              name="identificador" 
+              class="form-input" 
+              placeholder="juan.perez@bajio.mx" 
+              value="{{ identificador }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <!-- Campo: Contraseña con botón ? -->
+        <div class="form-group">
+          <div class="label-with-help">
+            <label class="form-label" for="password">Contraseña (Mínimo 8 caracteres) *</label>
+            <button type="button" class="btn-help-tooltip" data-tooltip="La contraseña debe tener mínimo 8 caracteres y combinar números (0-9), letras mayúsculas (A-Z) y minúsculas (a-z)." aria-label="Ayuda para contraseña">?</button>
+          </div>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-input" 
+              placeholder="Mínimo 8 caracteres, números, mayúsculas y minúsculas" 
+              minlength="8"
+              required
+            >
+          </div>
+
+          <!-- Barra de fortaleza de contraseña: Débil, Buena, Excelente -->
+          <div class="pwd-strength-container">
+            <div class="pwd-strength-header">
+              <span class="pwd-strength-title">Nivel de seguridad:</span>
+              <span class="pwd-strength-label" id="pwd-strength-text">Sin ingresar</span>
+            </div>
+            <div class="pwd-strength-bar-bg">
+              <div class="pwd-strength-bar-fill" id="pwd-strength-fill"></div>
+            </div>
+            <div class="pwd-rules-checklist">
+              <span id="chk-len" class="rule-item">Mínimo 8 caracteres</span>
+              <span id="chk-num" class="rule-item">Números (0-9)</span>
+              <span id="chk-upper" class="rule-item">Mayúscula (A-Z)</span>
+              <span id="chk-lower" class="rule-item">Minúscula (a-z)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campo: Confirmar Contraseña con botón ? -->
+        <div class="form-group">
+          <div class="label-with-help">
+            <label class="form-label" for="confirm_password">Confirmar Contraseña *</label>
+            <button type="button" class="btn-help-tooltip" data-tooltip="Reescribe exactamente la misma contraseña para comprobar que no hubo errores tipográficos." aria-label="Ayuda para confirmar">?</button>
+          </div>
+          <div class="input-icon-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input 
+              type="password" 
+              id="confirm_password" 
+              name="confirm_password" 
+              class="form-input" 
+              placeholder="Repite la contraseña" 
+              minlength="8"
+              required
+            >
+          </div>
+        </div>
+
+        <!-- Botón de Envío -->
+        <button type="submit" class="btn-submit-login" style="background-color: #059669;">
+          Crear Cuenta e Ingresar
+        </button>
+      </form>
+
+      <!-- Regresar al login -->
+      <div class="login-footer-action">
+        <span>¿Ya tienes una cuenta registrada?</span>
+        <a href="/login" class="link-register">Iniciar Sesión</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: America/Mexico_City</span>
+  </footer>
+
+  <script src="/static/js/password_checker.js"></script>
+  <script>
+    initPasswordChecker("password", "pwd-strength-fill", "pwd-strength-text");
+  </script>
+
+</body>
+</html>
+
