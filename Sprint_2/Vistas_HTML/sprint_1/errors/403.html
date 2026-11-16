@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or 'Acceso Denegado (403)' }} - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+      {% if user %}
+      <div class="user-profile-menu">
+        <span class="user-name">{{ user.nombre_completo }}</span>
+        <a href="/logout" class="btn-logout">Salir</a>
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="main-content" style="display: flex; align-items: center; justify-content: center; min-height: 60vh;">
+    <div class="content-card" style="max-width: 540px; padding: 40px; text-align: center; border-top: 4px solid #dc2626;">
+      <div style="width: 56px; height: 56px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px auto; color: #dc2626;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+
+      <h1 style="font-size: 20px; font-weight: 700; color: #991b1b; margin-bottom: 12px;">
+        {{ title or '403 - Acceso Restringido' }}
+      </h1>
+
+      <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
+        {{ message or 'No cuentas con los permisos suficientes para consultar esta información o realizar esta operación en el sistema (Criterio de Seguridad RBAC y Participación HU2).' }}
+      </p>
+
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <a href="{{ back_url or '/dashboard' }}" class="btn-primary">
+          Regresar a mi Panel
+        </a>
+        <a href="/tickets" class="btn-secondary">
+          Mis Tickets Autorizados
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+</body>
+</html>
+
