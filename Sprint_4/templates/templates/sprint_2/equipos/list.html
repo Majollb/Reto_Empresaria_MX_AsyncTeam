@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Equipos e Inventario - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Principal Corporativo -->
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <ul class="nav-links">
+          <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+          <li><a href="/tickets" class="nav-link">Tickets</a></li>
+          <li><a href="/equipos" class="nav-link active">Catálogo</a></li>
+          <li><a href="/admin/areas" class="nav-link">Áreas</a></li>
+          {% if user.rol in ("Admin", "Responsable") %}
+          <li><a href="/reportes" class="nav-link">Reportes</a></li>
+          {% endif %}
+          {% if user.rol == "Admin" %}
+          <li><a href="/admin/usuarios" class="nav-link">Gestión de Usuarios</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="user-profile-menu">
+          <div class="user-meta">
+            <span class="user-name">{{ user.nombre_completo }}</span>
+            {% if user.rol == "Admin" %}
+              <span class="badge-role badge-role-admin">Administrador</span>
+            {% elif user.rol == "Responsable" %}
+              <span class="badge-role badge-role-responsable">Responsable Técnico</span>
+            {% else %}
+              <span class="badge-role badge-role-usuario">Usuario Solicitante</span>
+            {% endif %}
+          </div>
+          <a href="/logout" class="btn-logout" title="Cerrar Sesión">Salir</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Catálogo de Equipos y Activos Industriales</h1>
+        <p class="page-description">Consulta de equipos activos, localización física y programación de mantenimiento preventivo (HU-04)</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        {% if user.rol == "Admin" %}
+        <a href="/admin/areas" class="btn-secondary">
+          Gestionar Áreas
+        </a>
+        <a href="/equipos/nuevo" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Nuevo Equipo
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Mensajes Flash -->
+    {% if success_msg %}
+    <div class="alert-box alert-box-success">
+      <span class="alert-icon">✓</span>
+      <div>{{ success_msg }}</div>
+    </div>
+    {% endif %}
+
+    {% if error_msg %}
+    <div class="alert-box alert-box-error">
+      <span class="alert-icon">!</span>
+      <div>{{ error_msg }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <div class="content-card" style="padding: 16px 20px; margin-bottom: 20px;">
+      <form action="/equipos" method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <div style="flex: 1; min-width: 240px;">
+          <input 
+            type="text" 
+            name="q" 
+            class="form-input" 
+            placeholder="Buscar por código, nombre, marca, modelo o serie..." 
+            value="{{ search }}"
+            style="height: 38px; padding-left: 14px;"
+          >
+        </div>
+
+        <div>
+          <select name="area_id" class="form-input" style="height: 38px; padding: 0 10px; width: 220px;">
+            <option value="">Área / Localización: Todas</option>
+            {% for a in areas %}
+            <option value="{{ a.id }}" {% if area_filter == a.id|string %}selected{% endif %}>
+              {{ a.nombre }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <select name="estado" class="form-input" style="height: 38px; padding: 0 10px; width: 150px;">
+            <option value="">Estado: Todos</option>
+            <option value="Activo" {% if estado_filter == 'Activo' %}selected{% endif %}>Activo</option>
+            <option value="Inactivo" {% if estado_filter == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-secondary" style="height: 38px; padding: 0 14px;">Filtrar</button>
+        {% if search or area_filter or estado_filter %}
+          <a href="/equipos" class="btn-secondary" style="height: 38px; padding: 0 14px; line-height: 36px;">Limpiar</a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Tabla de Equipos -->
+    <div class="content-card">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Equipo y Modelo</th>
+              <th>Marca y Serie</th>
+              <th>Área y Localización</th>
+              <th>Periodicidad Preventiva</th>
+              <th>Próximo Mantenimiento</th>
+              <th>Estado</th>
+              <th>Histórico Tickets</th>
+              {% if user.rol == "Admin" %}
+              <th style="text-align: right;">Acciones (Admin)</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for eq in equipos %}
+            <tr {% if eq.estado == 'Inactivo' %}style="background-color: #fafafa; opacity: 0.85;"{% endif %}>
+              <td>
+                <strong style="color: #0f2444;">{{ eq.codigo }}</strong>
+              </td>
+              <td>
+                <div style="font-weight: 600; color: #1e3a5f;">{{ eq.nombre }}</div>
+                <div style="font-size: 12px; color: #64748b;">{{ eq.modelo }}</div>
+              </td>
+              <td>
+                <div style="font-size: 13px; color: #1e293b;">{{ eq.marca }}</div>
+                <div style="font-size: 11.5px; color: #64748b; font-family: monospace;">S/N: {{ eq.numero_serie }}</div>
+              </td>
+              <td>
+                <div style="font-size: 13px; font-weight: 500; color: #0f2444;">{{ eq.area_nombre }}</div>
+                <div style="font-size: 12px; color: #64748b;">{{ eq.ubicacion_especifica or 'Área general' }}</div>
+              </td>
+              <td>
+                <span style="font-size: 13px; font-weight: 600; color: #0f2444;">Cada {{ eq.periodicidad_dias }} días</span>
+                <div style="font-size: 11.5px; color: #64748b;">Último: {{ eq.fecha_ultimo_mantenimiento or 'N/A' }}</div>
+              </td>
+              <td>
+                <div>{{ eq.mantenimiento_info.proximo }}</div>
+                <span class="badge-role {{ eq.mantenimiento_info.status_badge }}" style="font-size: 11px;">
+                  {{ eq.mantenimiento_info.status_texto }}
+                </span>
+              </td>
+              <td>
+                {% if eq.estado == 'Activo' %}
+                  <span class="badge-status status-resuelto"><span class="badge-status-dot"></span>Activo</span>
+                {% else %}
+                  <span class="badge-status status-cerrado"><span class="badge-status-dot"></span>Inactivo</span>
+                {% endif %}
+              </td>
+              <td style="text-align: center;">
+                <a href="/tickets?equipo={{ eq.id }}" class="btn-secondary" style="padding: 2px 8px; font-size: 11.5px;" title="Ver tickets vinculados">
+                  {{ eq.total_tickets }} ticket(s)
+                </a>
+              </td>
+              {% if user.rol == "Admin" %}
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 6px;">
+                  <a href="/equipos/{{ eq.id }}/editar" class="btn-secondary" style="padding: 3px 8px; font-size: 12px;">Editar</a>
+                  
+                  <form action="/equipos/{{ eq.id }}/toggle-status" method="POST" style="display: inline;">
+                    <button 
+                      type="submit" 
+                      class="btn-secondary" 
+                      style="padding: 3px 8px; font-size: 12px; color: {% if eq.estado == 'Activo' %}#b91c1c{% else %}#15803d{% endif %};"
+                      onclick="return confirm('¿Seguro que deseas cambiar el estado de este equipo? Los tickets históricos se mantendrán intactos.');"
+                    >
+                      {% if eq.estado == 'Activo' %}Desactivar{% else %}Activar{% endif %}
+                    </button>
+                  </form>
+                </div>
+              </td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+
+            {% if not equipos %}
+            <tr>
+              <td colspan="{% if user.rol == 'Admin' %}9{% else %}8{% endif %}" style="text-align: center; padding: 36px; color: #64748b;">
+                No se encontraron equipos registrados con los criterios seleccionados.
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+</body>
+</html>
+

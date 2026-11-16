@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket {{ ticket.codigo }} - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Principal Corporativo -->
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <ul class="nav-links">
+          <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+          <li><a href="/tickets" class="nav-link active">Tickets</a></li>
+          <li><a href="/equipos" class="nav-link">Equipos</a></li>
+          {% if user.rol in ("Admin", "Responsable") %}
+          <li><a href="/reportes" class="nav-link">Reportes e Indicadores</a></li>
+          {% endif %}
+          {% if user.rol == "Admin" %}
+          <li><a href="/admin/areas" class="nav-link">Catálogos / Áreas</a></li>
+          <li><a href="/admin/usuarios" class="nav-link">Gestión de Usuarios</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="user-profile-menu">
+          <div class="user-meta">
+            <span class="user-name">{{ user.nombre_completo }}</span>
+            {% if user.rol == "Admin" %}
+              <span class="badge-role badge-role-admin">Administrador</span>
+            {% elif user.rol == "Responsable" %}
+              <span class="badge-role badge-role-responsable">Responsable Técnico</span>
+            {% else %}
+              <span class="badge-role badge-role-usuario">Usuario Solicitante</span>
+            {% endif %}
+          </div>
+          <a href="/logout" class="btn-logout" title="Cerrar Sesión">Salir</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header-row">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+          <a href="/tickets" style="color: #64748b; text-decoration: none; font-size: 13px;">← Volver al listado</a>
+          <span style="color: #cbd5e1;">|</span>
+          <span style="font-family: monospace; font-size: 15px; font-weight: 700; color: #1e3a5f;">{{ ticket.codigo }}</span>
+          
+          <!-- Badge de Estado FSM -->
+          {% if ticket.estado == "Abierto" %}
+            <span class="badge-status status-abierto"><span class="badge-status-dot"></span>Abierto</span>
+          {% elif ticket.estado == "En Proceso" %}
+            <span class="badge-status status-en-proceso"><span class="badge-status-dot"></span>En Proceso</span>
+          {% elif ticket.estado == "En Espera" %}
+            <span class="badge-status status-en-espera"><span class="badge-status-dot"></span>En Espera</span>
+          {% elif ticket.estado == "Resuelto" %}
+            <span class="badge-status status-resuelto"><span class="badge-status-dot"></span>Resuelto</span>
+          {% elif ticket.estado == "Cerrado" %}
+            <span class="badge-status status-cerrado"><span class="badge-status-dot"></span>Cerrado</span>
+          {% elif ticket.estado == "Cancelado" %}
+            <span class="badge-status status-cancelado"><span class="badge-status-dot"></span>Cancelado</span>
+          {% elif ticket.estado == "Duplicado" %}
+            <span class="badge-status status-duplicado"><span class="badge-status-dot"></span>Duplicado</span>
+          {% endif %}
+
+          <!-- Badge de Tipo de Cierre (HU-10) -->
+          {% if ticket.tipo_cierre == "Con Solución" %}
+            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">
+              ✓ Con Solución
+            </span>
+          {% elif ticket.tipo_cierre == "Sin Solución" %}
+            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa;">
+              ⚠️ Sin Solución (Justificado)
+            </span>
+          {% endif %}
+
+          <!-- Badge de Recurrencia (HU-10) -->
+          {% if ticket.es_recurrencia == 1 or ticket.tipo_relacion == "Recurrencia" %}
+            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+              🔁 Atención por Recurrencia
+            </span>
+          {% endif %}
+
+          <!-- Badge de Prioridad -->
+          {% if ticket.prioridad == "Urgente" %}
+            <span class="badge-priority priority-urgente">Urgente</span>
+          {% elif ticket.prioridad == "Alta" %}
+            <span class="badge-priority priority-alta">Alta</span>
+          {% elif ticket.prioridad == "Media" %}
+            <span class="badge-priority priority-media">Media</span>
+          {% else %}
+            <span class="badge-priority priority-baja">Baja</span>
+          {% endif %}
+        </div>
+
+        <h1 class="page-title" style="margin: 0 0 6px 0;">{{ ticket.titulo }}</h1>
+        <p class="page-description" style="margin: 0;">
+          Categoría: <strong>{{ ticket.categoria }}</strong> | Área: <strong>{{ ticket.area_nombre or 'General' }}</strong>
+        </p>
+      </div>
+
+      <!-- Botones de Acción de Ciclo de Vida (HU-10) -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start;">
+        {% if ticket.estado != "Cerrado" %}
+          {% if user.rol in ("Admin", "Responsable") and ticket.estado in ("En Proceso", "En Espera") %}
+            <button onclick="openModal('modal-resolver')" class="btn-primary" style="background: #16a34a; border-color: #15803d; padding: 7px 14px; font-size: 13px;">
+              ✓ Registrar Solución
+            </button>
+            <button onclick="openModal('modal-cierre-sin-solucion')" class="btn-secondary" style="border-color: #ea580c; color: #c2410c; padding: 7px 14px; font-size: 13px;">
+              ⚠️ Cerrar Sin Solución
+            </button>
+          {% elif ticket.estado == "Resuelto" and (user.rol == "Admin" or ticket.solicitante_id == user.id) %}
+            <button onclick="openModal('modal-cierre-con-solucion')" class="btn-primary" style="background: #15803d; padding: 7px 14px; font-size: 13px;">
+              ✓ Confirmar Cierre (Conforme)
+            </button>
+            <button onclick="openModal('modal-cierre-sin-solucion')" class="btn-secondary" style="border-color: #ea580c; color: #c2410c; padding: 7px 14px; font-size: 13px;">
+              ⚠️ Cerrar Sin Solución
+            </button>
+          {% endif %}
+        {% else %}
+          <!-- Si está Cerrado: opción de crear nueva atención por Recurrencia (HU-10) -->
+          {% if user.rol in ("Admin", "Responsable") or ticket.solicitante_id == user.id %}
+            <button onclick="openModal('modal-recurrencia')" class="btn-primary" style="background: #d97706; border-color: #b45309; padding: 7px 14px; font-size: 13px;">
+              🔁 Reportar Recurrencia (Nueva Atención)
+            </button>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Alertas informativas -->
+    {% if success_msg %}
+      <div class="alert alert-success" style="margin-bottom: 20px;">
+        {{ success_msg }}
+      </div>
+    {% endif %}
+    {% if error_msg %}
+      <div class="alert alert-error" style="margin-bottom: 20px;">
+        {{ error_msg }}
+      </div>
+    {% endif %}
+
+    <!-- Banner de Bloqueo de Modificaciones Ordinarias tras Cierre (HU-10) -->
+    {% if ticket.estado == "Cerrado" %}
+    <div style="background: #f1f5f9; border-left: 4px solid #64748b; padding: 14px 18px; border-radius: 6px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 20px;">🔒</span>
+        <div>
+          <strong style="color: #1e293b; font-size: 13.5px;">Atención Cerrada Definitivamente (Inmutable)</strong>
+          <div style="color: #475569; font-size: 12.5px;">
+            Este ticket completó su ciclo de vida ({% if ticket.tipo_cierre == 'Con Solución' %}con solución técnica verificada{% else %}cierre justificado sin solución{% endif %}). Las modificaciones ordinarias de estado, reasignación y comentarios están bloqueadas según el criterio de integridad de HU-10.
+          </div>
+        </div>
+      </div>
+      <div>
+        <span style="font-size: 12px; font-weight: 600; color: #475569; background: #e2e8f0; padding: 4px 10px; border-radius: 4px;">
+          Fecha de Cierre: {{ ticket.fecha_cierre or ticket.updated_at }}
+        </span>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Banner de Vinculación de Recurrencia (HU-10) -->
+    {% if ticket.ticket_origen_recurrencia_codigo %}
+    <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 6px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 20px;">🔁</span>
+        <div>
+          <strong style="color: #92400e; font-size: 13.5px;">Atención Relacionada por Recurrencia</strong>
+          <div style="color: #78350f; font-size: 12.5px;">
+            Este requerimiento se originó por reaparición de la falla registrada previamente en el ticket 
+            <a href="/tickets/{{ ticket.ticket_origen_recurrencia_id }}" style="font-weight: 700; color: #1e3a5f; text-decoration: underline;">
+              {{ ticket.ticket_origen_recurrencia_codigo }} - {{ ticket.ticket_origen_recurrencia_titulo }}
+            </a>.
+          </div>
+        </div>
+      </div>
+      <a href="/tickets/{{ ticket.ticket_origen_recurrencia_id }}" class="btn-secondary" style="padding: 4px 10px; font-size: 12px;">
+        Ver Ticket Origen →
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Lista de Tickets Hijos Derivados por Recurrencia (HU-10) -->
+    {% if ticket.tickets_recurrentes %}
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0284c7; padding: 14px 18px; border-radius: 6px; margin-bottom: 20px;">
+      <strong style="color: #0369a1; font-size: 13.5px; display: block; margin-bottom: 8px;">
+        🔁 Atenciones Posteriores Originadas por Recurrencia de este Ticket:
+      </strong>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        {% for rec in ticket.tickets_recurrentes %}
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px;">
+          <div>
+            <a href="/tickets/{{ rec.id }}" style="font-weight: 700; color: #1e3a5f; text-decoration: none;">
+              {{ rec.codigo }} - {{ rec.titulo }}
+            </a>
+            <span style="color: #64748b; font-size: 12px; margin-left: 8px;">(Aperturado: {{ rec.created_at }})</span>
+          </div>
+          <div>
+            <span class="badge-status status-{{ rec.estado|lower|replace(' ', '-') }}" style="font-size: 11px;">
+              {{ rec.estado }}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Solución Técnica Registrada (HU-10) -->
+    {% if ticket.solucion_detalle %}
+    <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px 20px; border-radius: 6px; margin-bottom: 22px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span style="font-size: 18px;">✅</span>
+        <strong style="color: #15803d; font-size: 14px;">Solución Técnica Implementada (HU-10)</strong>
+        <span style="font-size: 12px; color: #166534; margin-left: auto;">
+          Registrada: {{ ticket.fecha_resolucion or 'N/D' }}
+        </span>
+      </div>
+      <p style="color: #14532d; font-size: 13.5px; line-height: 1.5; margin: 0; white-space: pre-wrap; font-family: inherit;">
+        {{ ticket.solucion_detalle }}
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- Justificación de Cierre Sin Solución (HU-10) -->
+    {% if ticket.motivo_sin_solucion %}
+    <div style="background: #fff7ed; border-left: 4px solid #ea580c; padding: 16px 20px; border-radius: 6px; margin-bottom: 22px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span style="font-size: 18px;">⚠️</span>
+        <strong style="color: #c2410c; font-size: 14px;">Justificación Técnica de Cierre Sin Solución (HU-10)</strong>
+        <span style="font-size: 12px; color: #9a3412; margin-left: auto;">
+          Cierre: {{ ticket.fecha_cierre or 'N/D' }}
+        </span>
+      </div>
+      <p style="color: #7c2d12; font-size: 13.5px; line-height: 1.5; margin: 0; white-space: pre-wrap; font-family: inherit;">
+        {{ ticket.motivo_sin_solucion }}
+      </p>
+      <div style="margin-top: 8px; font-size: 12px; color: #9a3412; font-style: italic;">
+        * Se conservan todos los diagnósticos previos y evidencias técnicas en la bitácora de auditoría.
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+      
+      <!-- Columna Principal: Datos, Tiempos, Equipo, Adjuntos y Trazabilidad -->
+      <div>
+
+        <!-- Tarjeta de Situación y Descripción Técnica -->
+        <div class="content-card" style="padding: 24px; margin-bottom: 22px;">
+          <h2 style="font-size: 15px; font-weight: 600; color: #1e3a5f; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            Situación del Problema y Diagnóstico
+          </h2>
+          <div style="font-size: 14px; color: #1e293b; line-height: 1.6; margin-bottom: 16px;">
+            {{ ticket.situacion_problema or ticket.descripcion }}
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; background: #f8fafc; padding: 14px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Reportado por</span>
+              <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">{{ ticket.detector_nombre or ticket.solicitante_nombre }}</div>
+              <div style="font-size: 12px; color: #64748b;">Solicitante: {{ ticket.solicitante_nombre }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Responsable Técnico</span>
+              <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">{{ ticket.responsable_nombre or 'Sin Asignar' }}</div>
+              <div style="font-size: 12px; color: #64748b;">{{ ticket.responsable_email or 'Pendiente de asignación' }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Fecha de Registro</span>
+              <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">{{ ticket.created_at }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Métricas de Tiempo de Atención (HU-08) -->
+        <div class="content-card" style="padding: 24px; margin-bottom: 22px;">
+          <h2 style="font-size: 15px; font-weight: 600; color: #1e3a5f; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            Métricas de Ciclo de Vida y Tiempos de Atención (HU-08)
+          </h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px;">
+            <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; border: 1px solid #e0f2fe;">
+              <span style="font-size: 11.5px; color: #0369a1; font-weight: 600; text-transform: uppercase;">Tiempo Total (Lead Time)</span>
+              <div style="font-size: 16px; font-weight: 700; color: #0c4a6e; margin-top: 2px;">
+                {{ ticket.metricas_tiempo.tiempo_total_texto }}
+              </div>
+            </div>
+
+            <div style="background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fef3c7;">
+              <span style="font-size: 11.5px; color: #b45309; font-weight: 600; text-transform: uppercase;">Tiempo en Espera (Pausas)</span>
+              <div style="font-size: 16px; font-weight: 700; color: #78350f; margin-top: 2px;">
+                {{ ticket.metricas_tiempo.tiempo_espera_texto }}
+              </div>
+            </div>
+
+            <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #dcfce7;">
+              <span style="font-size: 11.5px; color: #15803d; font-weight: 600; text-transform: uppercase;">Tiempo Neto de Atención</span>
+              <div style="font-size: 16px; font-weight: 700; color: #14532d; margin-top: 2px;">
+                {{ ticket.metricas_tiempo.tiempo_neto_texto }}
+              </div>
+            </div>
+          </div>
+
+          {% if ticket.motivo_espera and ticket.estado == 'En Espera' %}
+          <div style="margin-top: 14px; padding: 10px 14px; background: #fff7ed; border-left: 3px solid #f97316; border-radius: 4px; font-size: 13px; color: #9a3412;">
+            <strong>Motivo Actual de Espera:</strong> {{ ticket.motivo_espera }}
+          </div>
+          {% endif %}
+
+          {% if ticket.motivo_cancelacion %}
+          <div style="margin-top: 14px; padding: 10px 14px; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px; font-size: 13px; color: #991b1b;">
+            <strong>Motivo de Cancelación / Excepción:</strong> {{ ticket.motivo_cancelacion }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Tarjeta de Equipo Industrial Vinculado (HU-04) -->
+        <div class="content-card" style="padding: 24px; margin-bottom: 22px; border-left: 4px solid #1e3a5f;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            <h2 style="font-size: 15px; font-weight: 600; color: #1e3a5f; margin: 0;">
+              Equipo Industrial Vinculado (HU-04)
+            </h2>
+            {% if ticket.equipo_estado == 'Activo' %}
+              <span class="badge-status status-resuelto"><span class="badge-status-dot"></span>Equipo Activo</span>
+            {% elif ticket.equipo_estado %}
+              <span class="badge-status status-cerrado"><span class="badge-status-dot"></span>Inactivo (Histórico Conservado)</span>
+            {% endif %}
+          </div>
+
+          {% if ticket.equipo_nombre %}
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Código de Activo</span>
+              <div style="font-size: 14px; font-weight: 700; color: #0f2444;">{{ ticket.equipo_codigo }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Nombre del Equipo</span>
+              <div style="font-size: 14px; font-weight: 600; color: #1e3a5f;">{{ ticket.equipo_nombre }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Marca y Modelo</span>
+              <div style="font-size: 13.5px; color: #1e293b;">{{ ticket.equipo_marca }} - {{ ticket.equipo_modelo }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Número de Serie</span>
+              <div style="font-size: 13px; font-family: monospace; color: #334155;">{{ ticket.equipo_serie }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Área y Ubicación</span>
+              <div style="font-size: 13.5px; color: #0f2444;">{{ ticket.area_nombre }} ({{ ticket.equipo_ubicacion_esp or ticket.ubicacion_equipo }})</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Periodicidad Preventiva</span>
+              <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">
+                Cada {{ ticket.equipo_periodicidad or 90 }} días
+                <span style="font-size: 12px; font-weight: normal; color: #64748b;">(Último: {{ ticket.equipo_ultimo_mant or 'N/A' }})</span>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div style="color: #64748b; font-style: italic;">
+            Este ticket no cuenta con equipo directamente asignado.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Evidencias Técnicas Adjuntas (HU-05, HU-09: <= 10 MB) -->
+        <div class="content-card" style="padding: 22px; margin-bottom: 22px;">
+          <h2 style="font-size: 15px; font-weight: 600; color: #1e3a5f; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            Evidencias Técnicas y Archivos Adjuntos (HU-05 y HU-09)
+          </h2>
+
+          {% if ticket.adjuntos %}
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+            {% for adj in ticket.adjuntos %}
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">📎</span>
+                <div>
+                  <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">{{ adj.nombre_original }}</div>
+                  <div style="font-size: 11.5px; color: #64748b;">
+                    Tamaño: <strong>{{ adj.tamano_formateado }}</strong> | Subido por: {{ adj.autor_nombre or 'Usuario' }} | Fecha: {{ adj.created_at }}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <a href="/tickets/adjuntos/{{ adj.id }}" target="_blank" class="btn-secondary" style="padding: 4px 10px; font-size: 12px;">
+                  Descargar / Ver
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p style="font-size: 13px; color: #64748b; font-style: italic; margin-bottom: 16px;">
+            No se han registrado archivos de evidencia en este ticket.
+          </p>
+          {% endif %}
+
+          {% if ticket.estado != "Cerrado" %}
+          <form action="/tickets/{{ ticket.id }}/adjuntar" method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 14px;">
+            <input type="file" name="archivo" required style="font-size: 12.5px;">
+            <button type="submit" class="btn-secondary" style="padding: 5px 12px; font-size: 12.5px;">
+              Subir Evidencia (≤ 10 MB)
+            </button>
+          </form>
+          {% endif %}
+        </div>
+
+        <!-- Trazabilidad Cronológica e Historial Inmutable (HU-11) -->
+        <div class="content-card">
+          <div class="content-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="content-card-title">Trazabilidad Cronológica Completa y Auditoría (HU-11)</h2>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">
+              Total de Eventos: {{ history|length }}
+            </span>
+          </div>
+          <div style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              {% for h in history %}
+              <div style="display: flex; gap: 14px; border-left: 3px solid #2563eb; padding-left: 14px; margin-left: 6px;">
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; flex-wrap: wrap;">
+                    <div>
+                      <strong style="font-size: 13px; color: #0f2444;">{{ h.usuario_nombre }}</strong>
+                      <span style="font-size: 11px; color: #64748b; font-weight: 600;">[{{ h.usuario_rol }}]</span>
+                      {% if h.tipo_evento %}
+                        <span style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: 600; margin-left: 6px;">
+                          {{ h.tipo_evento }}
+                        </span>
+                      {% endif %}
+                    </div>
+                    <span style="font-size: 11.5px; color: #94a3b8; font-family: monospace;">{{ h.created_at }}</span>
+                  </div>
+                  
+                  <div style="font-size: 12.5px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">
+                    {{ h.accion }}
+                  </div>
+
+                  {% if h.comentario %}
+                  <p style="font-size: 13px; color: #334155; line-height: 1.45; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #f1f5f9; margin-top: 4px;">
+                    {{ h.comentario }}
+                  </p>
+                  {% endif %}
+
+                  {% if h.estado_anterior and h.estado_nuevo %}
+                  <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">
+                    Transición: <code>{{ h.estado_anterior }}</code> → <code>{{ h.estado_nuevo }}</code>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Formulario para agregar notas técnicas si no está cerrado -->
+            {% if ticket.estado != "Cerrado" %}
+            <form action="/tickets/{{ ticket.id }}/comentar" method="POST" enctype="multipart/form-data" style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+              <label for="comentario" style="font-size: 13px; font-weight: 600; color: #1e3a5f; display: block; margin-bottom: 6px;">
+                Registrar Nota Técnica de Seguimiento / Comentario (HU-09):
+              </label>
+              <textarea id="comentario" name="comentario" rows="3" class="form-input" placeholder="Ingresa actualización técnica, observaciones de inspección o notas de servicio..." required style="margin-bottom: 10px;"></textarea>
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <input type="file" name="archivo" style="font-size: 12px;">
+                <button type="submit" class="btn-primary" style="padding: 6px 14px; font-size: 13px;">
+                  Registrar en Bitácora
+                </button>
+              </div>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Barra Lateral: Estado FSM y Reasignación -->
+      <div>
+
+        <!-- Transiciones de Estado FSM (HU-08) -->
+        {% if ticket.estado != "Cerrado" and allowed_transitions %}
+        <div class="content-card" style="padding: 20px; margin-bottom: 22px;">
+          <h2 style="font-size: 14px; font-weight: 700; color: #1e3a5f; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+            Avanzar Ciclo de Vida (FSM)
+          </h2>
+          <form action="/tickets/{{ ticket.id }}/status" method="POST">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-size: 12px;">Siguiente Estado:</label>
+              <select name="estado" id="fsm_estado" class="form-input" style="height: 38px; font-size: 13px;" required onchange="handleFsmChange(this.value)">
+                <option value="">-- Seleccionar Estado --</option>
+                {% for st in allowed_transitions %}
+                <option value="{{ st }}">{{ st }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Campo motivo condicional -->
+            <div id="box_motivo" class="form-group" style="display: none; margin-bottom: 12px;">
+              <label class="form-label" id="lbl_motivo" style="font-size: 12px;">Motivo Requerido*:</label>
+              <textarea name="comentario" id="fsm_motivo" rows="2" class="form-input" placeholder="Especifique el motivo de la transición..."></textarea>
+            </div>
+
+            <!-- Campo ticket duplicado relacionado -->
+            <div id="box_duplicado" class="form-group" style="display: none; margin-bottom: 12px;">
+              <label class="form-label" style="font-size: 12px;">Ticket Original Relacionado*:</label>
+              <select name="ticket_relacionado_id" class="form-input" style="height: 38px; font-size: 12.5px;">
+                <option value="">-- Seleccionar Ticket --</option>
+                {% for ot in other_tickets %}
+                <option value="{{ ot.id }}">{{ ot.codigo }} - {{ ot.titulo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; height: 38px; font-size: 13px;">
+              Aplicar Transición
+            </button>
+          </form>
+        </div>
+        {% endif %}
+
+        <!-- Reasignación Técnica (HU-07) -->
+        {% if is_admin and ticket.estado != "Cerrado" %}
+        <div class="content-card" style="padding: 20px; margin-bottom: 22px;">
+          <h2 style="font-size: 14px; font-weight: 700; color: #1e3a5f; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+            Asignación / Reasignación (HU-07)
+          </h2>
+          <form action="/tickets/{{ ticket.id }}/reassign" method="POST">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-size: 12px;">Técnico Responsable:</label>
+              <select name="responsable_id" class="form-input" style="height: 38px; font-size: 13px;" required>
+                <option value="">-- Seleccionar Técnico Activo --</option>
+                {% for resp in responsables %}
+                <option value="{{ resp.id }}" {% if ticket.responsable_id == resp.id %}selected{% endif %}>
+                  {{ resp.nombre_completo }} ({{ resp.email }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-size: 12px;">
+                Motivo de Reasignación {% if ticket.responsable_id %}*(Obligatorio){% endif %}:
+              </label>
+              <textarea name="motivo" rows="2" class="form-input" placeholder="Justifique el motivo de asignación o reasignación..." {% if ticket.responsable_id %}required{% endif %}></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-size: 12px;">Actualizar Categoría:</label>
+              <select name="categoria" class="form-input" style="height: 38px; font-size: 13px;">
+                {% for cat in categorias %}
+                <option value="{{ cat.valor }}" {% if ticket.categoria == cat.valor %}selected{% endif %}>{{ cat.valor }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label" style="font-size: 12px;">Actualizar Prioridad:</label>
+              <select name="prioridad" class="form-input" style="height: 38px; font-size: 13px;">
+                <option value="Baja" {% if ticket.prioridad == 'Baja' %}selected{% endif %}>Baja</option>
+                <option value="Media" {% if ticket.prioridad == 'Media' %}selected{% endif %}>Media</option>
+                <option value="Alta" {% if ticket.prioridad == 'Alta' %}selected{% endif %}>Alta</option>
+                <option value="Urgente" {% if ticket.prioridad == 'Urgente' %}selected{% endif %}>Urgente</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-secondary" style="width: 100%; height: 38px; font-size: 13px;">
+              Guardar Reasignación
+            </button>
+          </form>
+        </div>
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL: REGISTRAR RESOLUCIÓN TÉCNICA (HU-10) -->
+  <div id="modal-resolver" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Solución Técnica (HU-10)</h3>
+        <button type="button" class="modal-close" onclick="closeModal('modal-resolver')">×</button>
+      </div>
+      <form action="/tickets/{{ ticket.id }}/resolver" method="POST">
+        <div class="modal-body">
+          <p style="font-size: 13px; color: #475569; margin-bottom: 14px;">
+            Documenta en detalle el trabajo técnico realizado, refacciones reemplazadas y pruebas ejecutadas para marcar la avería como resuelta.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="solucion_detalle">Solución Técnica Detallada*:</label>
+            <textarea id="solucion_detalle" name="solucion_detalle" rows="4" class="form-input" placeholder="Ej: Se reemplazó el fusible de potencia F3, se limpiaron los bornes del contactor y se realizaron 5 ciclos de arranque sin disparos térmicos." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-resolver')">Cancelar</button>
+          <button type="submit" class="btn-primary" style="background: #16a34a;">Guardar y Marcar Resuelto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMAR CIERRE CON SOLUCIÓN (HU-10) -->
+  <div id="modal-cierre-con-solucion" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirmar Cierre de Atención Conforme (HU-10)</h3>
+        <button type="button" class="modal-close" onclick="closeModal('modal-cierre-con-solucion')">×</button>
+      </div>
+      <form action="/tickets/{{ ticket.id }}/cerrar" method="POST">
+        <input type="hidden" name="tipo_cierre" value="Con Solución">
+        <div class="modal-body">
+          <p style="font-size: 13px; color: #475569; margin-bottom: 14px;">
+            Al confirmar el cierre, la atención pasará al estado definitivo <strong>Cerrado</strong> y quedará protegida contra modificaciones ordinarias.
+          </p>
+          <div class="form-group">
+            <label class="form-label">Solución Técnica Aplicada / Observaciones de Cierre:</label>
+            <textarea name="detalle_o_motivo" rows="3" class="form-input" placeholder="Confirma o complementa la solución técnica satisfactoria...">{{ ticket.solucion_detalle or '' }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-cierre-con-solucion')">Cancelar</button>
+          <button type="submit" class="btn-primary" style="background: #15803d;">Confirmar Cierre Definitivo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CIERRE SIN SOLUCIÓN JUSTIFICADO (HU-10) -->
+  <div id="modal-cierre-sin-solucion" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #c2410c;">Cierre Sin Solución Técnica (HU-10)</h3>
+        <button type="button" class="modal-close" onclick="closeModal('modal-cierre-sin-solucion')">×</button>
+      </div>
+      <form action="/tickets/{{ ticket.id }}/cerrar" method="POST">
+        <input type="hidden" name="tipo_cierre" value="Sin Solución">
+        <div class="modal-body">
+          <p style="font-size: 13px; color: #78350f; margin-bottom: 14px; background: #fffbeb; padding: 10px; border-radius: 4px; border: 1px solid #fed7aa;">
+            ⚠️ Este caso cerrará la atención conservando todos los diagnósticos, comentarios e intentos previos. <strong>Debe justificarse obligatoriamente</strong> el motivo por el cual no es viable o no se soluciona la falla.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="motivo_sin_solucion">Motivo / Justificación Obligatoria de Inviabilidad*:</label>
+            <textarea id="motivo_sin_solucion" name="detalle_o_motivo" rows="4" class="form-input" placeholder="Ej: Equipo con tecnología obsoleta descontinuada por el fabricante; no existen refacciones compatibles en mercado. Se recomienda baja patrimonial y sustitución completa." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-cierre-sin-solucion')">Cancelar</button>
+          <button type="submit" class="btn-primary" style="background: #ea580c; border-color: #c2410c;">Confirmar Cierre Sin Solución</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR ATENCIÓN POR RECURRENCIA (HU-10) -->
+  <div id="modal-recurrencia" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #b45309;">Reportar Recurrencia de Falla (HU-10)</h3>
+        <button type="button" class="modal-close" onclick="closeModal('modal-recurrencia')">×</button>
+      </div>
+      <form action="/tickets/{{ ticket.id }}/recurrencia" method="POST">
+        <div class="modal-body">
+          <p style="font-size: 13px; color: #475569; margin-bottom: 14px;">
+            Al registrar una recurrencia, el sistema creará un <strong>nuevo ticket con folio único</strong> vinculado bidireccionalmente a esta atención previa, conservando el equipo ({{ ticket.equipo_codigo or 'N/A' }}), área y categoría.
+          </p>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label">Persona que detecta la reaparición:</label>
+            <input type="text" name="detector_nombre" class="form-input" value="{{ user.nombre_completo }}" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label">Prioridad de la Recurrencia:</label>
+            <select name="prioridad" class="form-input">
+              <option value="Alta" selected>Alta (Reaparición de falla)</option>
+              <option value="Urgente">Urgente (Paro de línea)</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="situacion_falla">Descripción de la Falla Reaparecida*:</label>
+            <textarea id="situacion_falla" name="situacion_falla" rows="4" class="form-input" placeholder="Describa el comportamiento observado, si los síntomas son idénticos o si hubo variaciones en la máquina..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-recurrencia')">Cancelar</button>
+          <button type="submit" class="btn-primary" style="background: #d97706; border-color: #b45309;">Generar Nueva Atención Relacionada</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    <span>Zona horaria: {{ TIMEZONE_LABEL }} | Automatización y Software del Bajío</span>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    function handleFsmChange(val) {
+      const boxMotivo = document.getElementById('box_motivo');
+      const lblMotivo = document.getElementById('lbl_motivo');
+      const boxDuplicado = document.getElementById('box_duplicado');
+      const txtMotivo = document.getElementById('fsm_motivo');
+
+      if (!boxMotivo) return;
+
+      if (val === 'En Espera') {
+        boxMotivo.style.display = 'block';
+        lblMotivo.innerText = 'Motivo Obligatorio de Espera*:';
+        txtMotivo.required = true;
+        txtMotivo.placeholder = 'Ej: En espera de refacciones de Alemania o paro programado...';
+        if (boxDuplicado) boxDuplicado.style.display = 'none';
+      } else if (val === 'Cancelado') {
+        boxMotivo.style.display = 'block';
+        lblMotivo.innerText = 'Motivo Obligatorio de Cancelación*:';
+        txtMotivo.required = true;
+        txtMotivo.placeholder = 'Justifique el motivo de cancelación de la solicitud...';
+        if (boxDuplicado) boxDuplicado.style.display = 'none';
+      } else if (val === 'Duplicado') {
+        boxMotivo.style.display = 'block';
+        lblMotivo.innerText = 'Motivo de Duplicidad*:';
+        txtMotivo.required = true;
+        txtMotivo.placeholder = 'Explique por qué este ticket es duplicado...';
+        if (boxDuplicado) boxDuplicado.style.display = 'block';
+      } else {
+        boxMotivo.style.display = 'none';
+        txtMotivo.required = false;
+        if (boxDuplicado) boxDuplicado.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

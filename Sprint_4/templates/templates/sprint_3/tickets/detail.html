@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket {{ ticket.codigo }} - Automatización y Software del Bajío</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Encabezado Principal Corporativo -->
+  <header class="main-header">
+    <div class="header-container">
+      <a href="/dashboard" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="3.5" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="3.5" y="14" width="6.5" height="6.5" rx="2"></rect>
+            <rect x="14" y="14" width="6.5" height="6.5" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-texts">
+          <span class="brand-title">AUTOMATIZACIÓN Y SOFTWARE DEL BAJÍO</span>
+          <span class="brand-subtitle">Sistema de Tickets de Mantenimiento</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <ul class="nav-links">
+          <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+          <li><a href="/tickets" class="nav-link active">Tickets</a></li>
+          <li><a href="/equipos" class="nav-link">Catálogo</a></li>
+          <li><a href="/admin/areas" class="nav-link">Áreas</a></li>
+          {% if user.rol in ("Admin", "Responsable") %}
+          <li><a href="/reportes" class="nav-link">Reportes</a></li>
+          {% endif %}
+          {% if user.rol == "Admin" %}
+          <li><a href="/admin/usuarios" class="nav-link">Gestión de Usuarios</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="user-profile-menu">
+          <div class="user-meta">
+            <span class="user-name">{{ user.nombre_completo }}</span>
+            {% if user.rol == "Admin" %}
+              <span class="badge-role badge-role-admin">Administrador</span>
+            {% elif user.rol == "Responsable" %}
+              <span class="badge-role badge-role-responsable">Responsable Técnico</span>
+            {% else %}
+              <span class="badge-role badge-role-usuario">Usuario Solicitante</span>
+            {% endif %}
+          </div>
+          <a href="/logout" class="btn-logout" title="Cerrar Sesión">Salir</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header-row">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+          <span style="font-size: 17px; font-weight: 800; color: #1e3a5f; font-family: monospace;">{{ ticket.codigo }}</span>
+          
+          {% if ticket.prioridad == "Urgente" %}
+            <span class="badge-prio prio-urgente">Urgente</span>
+          {% elif ticket.prioridad == "Alta" %}
+            <span class="badge-prio prio-alta">Alta</span>
+          {% elif ticket.prioridad == "Media" %}
+            <span class="badge-prio prio-media">Media</span>
+          {% else %}
+            <span class="badge-prio prio-baja">Baja</span>
+          {% endif %}
+
+          {% if ticket.estado == "Abierto" %}
+            <span class="badge-status status-abierto"><span class="badge-status-dot"></span>Abierto</span>
+          {% elif ticket.estado == "En Proceso" %}
+            <span class="badge-status status-en-proceso"><span class="badge-status-dot"></span>En Proceso</span>
+          {% elif ticket.estado == "En Espera" %}
+            <span class="badge-status status-en-espera"><span class="badge-status-dot"></span>En Espera</span>
+          {% elif ticket.estado == "Resuelto" %}
+            <span class="badge-status status-resuelto"><span class="badge-status-dot"></span>Resuelto</span>
+          {% elif ticket.estado == "Cerrado" %}
+            <span class="badge-status status-cerrado"><span class="badge-status-dot"></span>Cerrado</span>
+          {% elif ticket.estado == "Cancelado" %}
+            <span class="badge-status" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;"><span class="badge-status-dot" style="background: #ef4444;"></span>Cancelado</span>
+          {% elif ticket.estado == "Duplicado" %}
+            <span class="badge-status" style="background: #f5f3ff; color: #6b21a8; border: 1px solid #ddd6fe;"><span class="badge-status-dot" style="background: #a855f7;"></span>Duplicado</span>
+          {% endif %}
+
+          {% if ticket.ticket_relacionado_codigo %}
+            <span style="font-size: 12px; background: #ede9fe; color: #5b21b6; padding: 2px 8px; border-radius: 6px;">
+              Vinculado a: <strong>{{ ticket.ticket_relacionado_codigo }}</strong>
+            </span>
+          {% endif %}
+        </div>
+        <h1 class="page-title">{{ ticket.titulo }}</h1>
+      </div>
+      <div>
+        <a href="/tickets" class="btn-secondary">Volver al Listado</a>
+      </div>
+    </div>
+
+    <!-- Mensajes Flash de Éxito / Error -->
+    {% if success_msg %}
+    <div class="alert-box alert-box-success">
+      <span class="alert-icon">✓</span>
+      <div>{{ success_msg }}</div>
+    </div>
+    {% endif %}
+
+    {% if error_msg %}
+    <div class="alert-box alert-box-error">
+      <span class="alert-icon">!</span>
+      <div>{{ error_msg }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Distribución a dos columnas -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+      
+      <!-- Columna Izquierda: Información Principal, Equipo, Tiempos y Bitácora -->
+      <div>
+        
+        <!-- Tarjeta de Detalle del Ticket y Falla Detectada (HU-05) -->
+        <div class="content-card" style="padding: 24px; margin-bottom: 22px;">
+          <h2 style="font-size: 15px; font-weight: 600; color: #1e3a5f; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            Situación y Descripción de la Falla
+          </h2>
+          <p style="font-size: 14px; color: #1e293b; line-height: 1.6; white-space: pre-wrap; margin-bottom: 18px;">{{ ticket.situacion_problema or ticket.descripcion }}</p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Detectado Por</span>
+              <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">{{ ticket.detector_nombre or ticket.solicitante_nombre }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Categoría</span>
+              <div style="font-size: 13.5px; font-weight: 500; color: #0f2444;">{{ ticket.categoria }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Fecha de Registro</span>
+              <div style="font-size: 13.5px; font-weight: 500; color: #0f2444;">{{ ticket.created_at }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Tiempos de Atención y Esperas (HU-08) -->
+        <div class="content-card" style="padding: 20px 24px; margin-bottom: 22px; background: #fdfefe; border-top: 3px solid #0284c7;">
+          <h2 style="font-size: 14.5px; font-weight: 700; color: #0369a1; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+            ⏱️ Tiempos de Atención y Registro de Esperas (HU-08)
+          </h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px;">
+            <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; border: 1px solid #e0f2fe;">
+              <span style="font-size: 11.5px; color: #0369a1; font-weight: 600; text-transform: uppercase;">Tiempo Total (Lead Time)</span>
+              <div style="font-size: 16px; font-weight: 700; color: #0c4a6e; margin-top: 2px;">
+                {{ ticket.metricas_tiempo.tiempo_total_texto }}
+              </div>
+            </div>
+
+            <div style="background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fef3c7;">
+              <span style="font-size: 11.5px; color: #b45309; font-weight: 600; text-transform: uppercase;">Tiempo en Espera (Pausas)</span>
+              <div style="font-size: 16px; font-weight: 700; color: #78350f; margin-top: 2px;">
+                {{ ticket.metricas_tiempo.tiempo_espera_texto }}
+              </div>
+            </div>
+
+            <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #dcfce7;">
+              <span style="font-size: 11.5px; color: #15803d; font-weight: 600; text-transform: uppercase;">Tiempo Neto de Atención</span>
+              <div style="font-size: 16px; font-weight: 700; color: #14532d; margin-top: 2px;">
+                {{ ticket.metricas_tiempo.tiempo_neto_texto }}
+              </div>
+            </div>
+          </div>
+
+          {% if ticket.motivo_espera and ticket.estado == 'En Espera' %}
+          <div style="margin-top: 14px; padding: 10px 14px; background: #fff7ed; border-left: 3px solid #f97316; border-radius: 4px; font-size: 13px; color: #9a3412;">
+            <strong>Motivo Actual de Espera:</strong> {{ ticket.motivo_espera }}
+          </div>
+          {% endif %}
+
+          {% if ticket.motivo_cancelacion %}
+          <div style="margin-top: 14px; padding: 10px 14px; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px; font-size: 13px; color: #991b1b;">
+            <strong>Motivo de Cancelación / Excepción:</strong> {{ ticket.motivo_cancelacion }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Tarjeta de Información Completa del Equipo Vinculado (HU-04) -->
+        <div class="content-card" style="padding: 24px; margin-bottom: 22px; border-left: 4px solid #1e3a5f;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            <h2 style="font-size: 15px; font-weight: 600; color: #1e3a5f; margin: 0;">
+              Equipo Industrial Vinculado (HU-04)
+            </h2>
+            {% if ticket.equipo_estado == 'Activo' %}
+              <span class="badge-status status-resuelto"><span class="badge-status-dot"></span>Equipo Activo</span>
+            {% elif ticket.equipo_estado %}
+              <span class="badge-status status-cerrado"><span class="badge-status-dot"></span>Inactivo (Referencia Histórica Conservada)</span>
+            {% endif %}
+          </div>
+
+          {% if ticket.equipo_nombre %}
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Código de Activo</span>
+              <div style="font-size: 14px; font-weight: 700; color: #0f2444;">{{ ticket.equipo_codigo }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Nombre del Equipo</span>
+              <div style="font-size: 14px; font-weight: 600; color: #1e3a5f;">{{ ticket.equipo_nombre }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Marca y Modelo</span>
+              <div style="font-size: 13.5px; color: #1e293b;">{{ ticket.equipo_marca }} - {{ ticket.equipo_modelo }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Número de Serie</span>
+              <div style="font-size: 13px; font-family: monospace; color: #334155;">{{ ticket.equipo_serie }}</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Área y Ubicación</span>
+              <div style="font-size: 13.5px; color: #0f2444;">{{ ticket.area_nombre }} ({{ ticket.equipo_ubicacion_esp or ticket.ubicacion_equipo }})</div>
+            </div>
+            <div>
+              <span style="font-size: 11.5px; color: #64748b; text-transform: uppercase; font-weight: 600;">Periodicidad Preventiva</span>
+              <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">
+                Cada {{ ticket.equipo_periodicidad or 90 }} días
+                <span style="font-size: 12px; font-weight: normal; color: #64748b;">(Último: {{ ticket.equipo_ultimo_mant or 'N/A' }})</span>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div style="color: #64748b; font-style: italic;">
+            Este ticket no cuenta con equipo directamente asignado.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Evidencias Técnicas y Archivos Adjuntos (HU-05 y HU-09: <= 10 MB) -->
+        <div class="content-card" style="padding: 22px; margin-bottom: 22px;">
+          <h2 style="font-size: 15px; font-weight: 600; color: #1e3a5f; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            Evidencias Técnicas y Archivos Adjuntos (HU-05 y HU-09)
+          </h2>
+
+          {% if ticket.adjuntos %}
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+            {% for adj in ticket.adjuntos %}
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">📎</span>
+                <div>
+                  <div style="font-size: 13.5px; font-weight: 600; color: #0f2444;">{{ adj.nombre_original }}</div>
+                  <div style="font-size: 11.5px; color: #64748b;">
+                    Tamaño: <strong>{{ adj.tamano_formateado }}</strong> | Subido por: {{ adj.autor_nombre or 'Usuario' }} | Fecha: {{ adj.created_at }}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <a href="/tickets/adjuntos/{{ adj.id }}" target="_blank" class="btn-secondary" style="padding: 4px 10px; font-size: 12px;">
+                  Descargar / Ver
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p style="font-size: 13px; color: #64748b; font-style: italic; margin-bottom: 16px;">
+            No se han registrado archivos de evidencia en este ticket.
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Bitácora Cronológica Inmutable de Seguimiento y Comentarios (HU-09) -->
+        <div class="content-card">
+          <div class="content-card-header">
+            <h2 class="content-card-title">Bitácora Cronológica Inmutable de Atención (HU-09)</h2>
+          </div>
+          <div style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              {% for h in history %}
+              <div style="display: flex; gap: 14px; border-left: 3px solid #2563eb; padding-left: 14px; margin-left: 6px;">
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                    <div>
+                      <strong style="font-size: 13px; color: #0f2444;">{{ h.usuario_nombre }}</strong>
+                      <span style="font-size: 11px; color: #64748b; font-weight: 600;">[{{ h.usuario_rol }}]</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #94a3b8;">{{ h.created_at }}</span>
+                  </div>
+                  
+                  <div style="font-size: 12.5px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">
+                    {{ h.accion }}
+                  </div>
+
+                  {% if h.comentario %}
+                  <p style="font-size: 13px; color: #334155; line-height: 1.45; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #f1f5f9; margin-top: 4px;">
+                    {{ h.comentario }}
+                  </p>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Formulario Integrado: Agregar Comentario y Evidencia Técnica (HU-09: <= 10 MB) -->
+            <form action="/tickets/{{ ticket.id }}/comentar" method="POST" enctype="multipart/form-data" style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 18px;">
+              <label class="form-label" for="comentario" style="font-weight: 600; margin-bottom: 6px;">
+                Registrar Comentario / Nota Técnica de Seguimiento (HU-09)
+              </label>
+              <textarea 
+                id="comentario" 
+                name="comentario" 
+                class="form-input" 
+                rows="3" 
+                placeholder="Escribe aquí notas sobre avances, diagnóstico o pruebas de verificación..." 
+                style="height: auto; padding: 10px 12px; resize: vertical; margin-bottom: 12px;" 
+                required
+              ></textarea>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px dashed #cbd5e1;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 14px;">📎</span>
+                  <label for="comentario_archivo" style="font-size: 12px; font-weight: 600; color: #475569;">
+                    Adjuntar archivo de evidencia técnica (≤ 10 MB):
+                  </label>
+                  <input type="file" id="comentario_archivo" name="archivo" style="font-size: 12px;" accept=".png,.jpg,.jpeg,.gif,.pdf,.txt,.docx,.xlsx,.zip">
+                </div>
+                <button type="submit" class="btn-primary" style="padding: 7px 16px; font-size: 13px;">
+                  Publicar Nota
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Columna Derecha: Participantes y Acciones de Control RBAC -->
+      <div>
+        
+        <!-- Tarjeta de Participantes -->
+        <div class="content-card" style="padding: 20px; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 600; color: #1e3a5f; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.3px;">
+            Participantes del Ticket
+          </h3>
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b; font-weight: 500;">Usuario Solicitante:</div>
+            <div style="font-weight: 600; color: #0f2444; font-size: 13.5px;">{{ ticket.solicitante_nombre }}</div>
+            <div style="font-size: 12px; color: #64748b;">{{ ticket.solicitante_email }}</div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b; font-weight: 500;">Persona que Detectó la Falla:</div>
+            <div style="font-weight: 600; color: #0f2444; font-size: 13.5px;">{{ ticket.detector_nombre or ticket.solicitante_nombre }}</div>
+          </div>
+
+          <div>
+            <div style="font-size: 12px; color: #64748b; font-weight: 500;">Responsable Técnico Asignado:</div>
+            {% if ticket.responsable_nombre %}
+              <div style="font-weight: 600; color: #0f2444; font-size: 13.5px;">{{ ticket.responsable_nombre }}</div>
+              <div style="font-size: 12px; color: #64748b;">{{ ticket.responsable_email }}</div>
+            {% else %}
+              <div style="font-size: 13px; color: #d97706; font-style: italic; margin-top: 2px;">
+                Pendiente de asignación técnica por Administración
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Acciones: Transición Válida de Estado (HU-08) -->
+        {% if can_modify and allowed_transitions %}
+        <div class="content-card" style="padding: 20px; margin-bottom: 20px; border-left: 3px solid #2563eb;">
+          <h3 style="font-size: 14px; font-weight: 600; color: #1e3a5f; margin-bottom: 12px;">
+            Transición de Estado (HU-08)
+          </h3>
+          <form action="/tickets/{{ ticket.id }}/status" method="POST" id="statusTransitionForm">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="nuevo_estado">Siguiente Estado Válido *</label>
+              <select id="nuevo_estado" name="estado" class="form-input" style="padding-left: 10px;" required onchange="toggleReasonRequirement(this.value)">
+                <option value="">-- Seleccionar Transición --</option>
+                {% for st in allowed_transitions %}
+                <option value="{{ st }}">{{ st }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Selector condicional de ticket original si marca Duplicado -->
+            <div id="duplicateSelectorGroup" style="display: none; margin-bottom: 12px;">
+              <label class="form-label" for="ticket_relacionado_id">Ticket Original Relacionado *</label>
+              <select id="ticket_relacionado_id" name="ticket_relacionado_id" class="form-input" style="padding-left: 10px;">
+                <option value="">-- Seleccionar Ticket Original --</option>
+                {% for ot in other_tickets %}
+                <option value="{{ ot.id }}">{{ ot.codigo }} - {{ ot.titulo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="motivo_estado" id="motivoLabel">
+                Motivo / Justificación
+              </label>
+              <input 
+                type="text" 
+                id="motivo_estado" 
+                name="comentario" 
+                class="form-input" 
+                placeholder="Obligatorio para En Espera o Cancelación" 
+                style="padding-left: 12px; height: 38px;"
+              >
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+              Aplicar Transición
+            </button>
+          </form>
+        </div>
+        {% elif not allowed_transitions and can_modify %}
+        <div class="content-card" style="padding: 16px; margin-bottom: 20px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
+          El ticket se encuentra en un estado terminal (<strong>{{ ticket.estado }}</strong>) y no admite transiciones adicionales.
+        </div>
+        {% endif %}
+
+        <!-- Acciones: Clasificar y Asignar / Reasignar Responsable (Admin - HU-07) -->
+        {% if is_admin %}
+        <div class="content-card" style="padding: 20px; border-left: 3px solid #7c3aed; margin-bottom: 20px;">
+          <h3 style="font-size: 14px; font-weight: 600; color: #5b21b6; margin-bottom: 12px;">
+            Clasificar y Asignar / Reasignar (HU-07)
+          </h3>
+          <form action="/tickets/{{ ticket.id }}/reassign" method="POST">
+            
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="new_resp_id">Técnico Responsable Activo *</label>
+              <select id="new_resp_id" name="responsable_id" class="form-input" style="padding-left: 10px;">
+                <option value="">-- Sin Asignar (Desasignar) --</option>
+                {% for r in responsables %}
+                <option value="{{ r.id }}" {% if ticket.responsable_id == r.id %}selected{% endif %}>
+                  {{ r.nombre_completo }} ({{ r.username }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" for="reassign_motivo">Motivo de Reasignación *</label>
+              <input 
+                type="text" 
+                id="reassign_motivo" 
+                name="motivo" 
+                class="form-input" 
+                placeholder="Obligatorio si ya tenía técnico previo" 
+                style="padding-left: 12px; height: 38px;"
+                {% if ticket.responsable_id %}required{% endif %}
+              >
+            </div>
+
+            <!-- Reclasificación de Categoría y Prioridad (HU-07) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+              <div>
+                <label class="form-label" style="font-size: 11.5px;">Categoría</label>
+                <select name="categoria" class="form-input" style="padding-left: 8px; font-size: 12px;">
+                  {% for cat in categorias %}
+                  <option value="{{ cat.valor }}" {% if ticket.categoria == cat.valor %}selected{% endif %}>{{ cat.valor }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 11.5px;">Prioridad</label>
+                <select name="prioridad" class="form-input" style="padding-left: 8px; font-size: 12px;">
+                  <option value="Baja" {% if ticket.prioridad == 'Baja' %}selected{% endif %}>Baja</option>
+                  <option value="Media" {% if ticket.prioridad == 'Media' %}selected{% endif %}>Media</option>
+                  <option value="Alta" {% if ticket.prioridad == 'Alta' %}selected{% endif %}>Alta</option>
+                  <option value="Urgente" {% if ticket.prioridad == 'Urgente' %}selected{% endif %}>Urgente</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background-color: #5b21b6;">
+              Guardar Asignación / Clasificación
+            </button>
+          </form>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Zona horaria: {{ TIMEZONE_LABEL }}</span>
+  </footer>
+
+  <script>
+    function toggleReasonRequirement(status) {
+      const motivoInput = document.getElementById("motivo_estado");
+      const motivoLabel = document.getElementById("motivoLabel");
+      const dupGroup = document.getElementById("duplicateSelectorGroup");
+      const dupSelect = document.getElementById("ticket_relacionado_id");
+
+      if (status === "En Espera" || status === "Cancelado") {
+        motivoInput.required = true;
+        motivoLabel.innerHTML = 'Motivo / Justificación <span style="color:#b91c1c;">*</span>';
+        motivoInput.placeholder = "Motivo obligatorio para " + status;
+        dupGroup.style.display = "none";
+        if (dupSelect) dupSelect.required = false;
+      } else if (status === "Duplicado") {
+        motivoInput.required = true;
+        motivoLabel.innerHTML = 'Motivo de Duplicado <span style="color:#b91c1c;">*</span>';
+        motivoInput.placeholder = "Indique por qué este ticket es duplicado";
+        dupGroup.style.display = "block";
+        if (dupSelect) dupSelect.required = true;
+      } else {
+        motivoInput.required = false;
+        motivoLabel.innerHTML = 'Motivo / Detalle (Opcional)';
+        motivoInput.placeholder = "Opcional";
+        dupGroup.style.display = "none";
+        if (dupSelect) dupSelect.required = false;
+      }
+    }
+  </script>
+
+</body>
+</html>
